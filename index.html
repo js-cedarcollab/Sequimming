@@ -1,0 +1,3392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>SEQUIMMING</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#1F3B2C;
+    --forest-dark:#132419;
+    --gold:#E8B94A;
+    --rust:#B5482F;
+    --cream:#F1E9D2;
+    --sky:#3E7C9A;
+    --ink:#1A1A1A;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--forest-dark);
+    color:var(--cream);
+    font-family:'VT323', monospace;
+    overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+    touch-action:none;
+  }
+  .pixel{font-family:'Press Start 2P', monospace;}
+  #wrap{
+    max-width:640px;margin:0 auto;height:100%;
+    display:flex;flex-direction:column;
+    border-left:4px solid var(--gold);border-right:4px solid var(--gold);
+    background:var(--forest);
+  }
+  header{
+    padding:8px 10px 6px;
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:3px solid var(--gold);
+    background:linear-gradient(180deg,#26472F,#1F3B2C);
+  }
+  header .title{font-size:11px;letter-spacing:1px;color:var(--gold);}
+  header .loc{font-size:13px;color:var(--cream);}
+  #concertBanner{
+    background:linear-gradient(90deg,var(--rust),#8a3323);
+    color:var(--cream);font-size:13px;text-align:center;padding:5px 8px;
+    border-bottom:2px solid var(--gold);
+  }
+  #hud{
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    padding:6px 10px;background:var(--forest-dark);border-bottom:2px solid #0c150e;
+    font-size:16px;flex-wrap:wrap;
+  }
+  #hud .stat{display:flex;align-items:center;gap:4px;white-space:nowrap;}
+  #gasBarOuter{
+    width:60px;height:12px;border:2px solid var(--cream);background:#0c150e;position:relative;
+  }
+  #gasBarInner{
+    height:100%;background:var(--gold);width:60%;
+  }
+  #coin-ico{color:var(--gold);}
+  #stage{
+    position:relative;flex:1;min-height:0;
+    display:flex;align-items:center;justify-content:center;
+    background:#0c150e;
+  }
+  canvas{
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    width:100%;height:100%;object-fit:contain;
+    background:#0c150e;
+  }
+  #popupLayer{position:absolute;inset:0;pointer-events:none;}
+  .floatText{
+    position:absolute;color:var(--gold);font-family:'Press Start 2P';font-size:10px;
+    text-shadow:2px 2px 0 #000;
+    animation:floatUp 1.1s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:1;transform:translateY(0);}
+    100%{opacity:0;transform:translateY(-30px);}
+  }
+  #controls{
+    padding:10px;display:flex;justify-content:space-between;align-items:center;
+    background:var(--forest-dark);border-top:2px solid #0c150e;
+  }
+  .dpad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:3px;}
+  .dbtn{
+    background:var(--forest);border:2px solid var(--gold);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:16px;border-radius:4px;
+  }
+  .dbtn:active{background:var(--gold);color:var(--forest);}
+  .dblank{visibility:hidden;}
+  #rightControls{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .smallBtn{font-size:13px;padding:6px 11px;}
+  #hint{font-size:13px;color:#b9c9b6;max-width:210px;text-align:right;line-height:1.2;}
+
+  #introHint{
+    position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;
+    pointer-events:none;padding:16px;z-index:5;
+  }
+  #introHint .box{
+    background:rgba(10,16,11,.9);border:2px solid var(--gold);border-radius:6px;
+    padding:10px 14px;font-size:15px;text-align:center;max-width:300px;line-height:1.3;
+  }
+  #introHint.fadeOutHint{animation:fadeOutHint 1s ease forwards;}
+  @keyframes fadeOutHint{to{opacity:0;}}
+
+  #hackyCountdown{font-family:'Press Start 2P';font-size:16px;color:var(--rust);min-height:20px;margin-bottom:6px;}
+
+  /* Overlays */
+  .overlay{
+    position:absolute;inset:0;background:rgba(10,16,11,.88);
+    display:flex;align-items:center;justify-content:center;
+    padding:18px;z-index:10;
+  }
+  .hidden{display:none !important;}
+  .card{
+    background:var(--cream);color:var(--ink);
+    max-width:440px;width:100%;padding:18px 18px 14px;
+    position:relative;
+    border-radius:2px;
+    box-shadow:0 8px 0 rgba(0,0,0,.35);
+  }
+  .card:before, .card:after{
+    content:"";position:absolute;top:50%;transform:translateY(-50%);
+    width:16px;height:16px;background:var(--forest-dark);border-radius:50%;
+  }
+  .card:before{left:-8px;}
+  .card:after{right:-8px;}
+  #modalScene, #winScene{
+    width:100%; height:auto; aspect-ratio:300/120; display:block;
+    margin-bottom:10px; border:2px solid var(--forest-dark);
+    image-rendering:pixelated; image-rendering:crisp-edges;
+  }
+  .ticketRow{
+    border-bottom:2px dashed #9a927a;margin-bottom:10px;padding-bottom:10px;
+  }
+  .card h2{font-family:'Press Start 2P';font-size:14px;margin:0 0 10px;color:var(--rust);line-height:1.5;}
+  .card p{font-size:19px;line-height:1.35;margin:0 0 12px;}
+  .card .small{font-size:15px;color:#5a5340;}
+  .btnRow{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .btn{
+    font-family:'VT323';font-size:18px;
+    background:var(--forest);color:var(--cream);border:none;
+    padding:9px 14px;cursor:pointer;border-radius:3px;
+    box-shadow:0 3px 0 var(--forest-dark);
+  }
+  .btn:active{transform:translateY(2px);box-shadow:none;}
+  .btn.gold{background:var(--gold);color:var(--ink);box-shadow:0 3px 0 #a5822c;}
+  .btn.rust{background:var(--rust);color:var(--cream);box-shadow:0 3px 0 #7c3120;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  #titleScreen h1{
+    font-family:'Press Start 2P';font-size:24px;color:var(--gold);text-align:center;
+    text-shadow:3px 3px 0 var(--rust);margin:0 0 6px;
+  }
+  #titleScreen h1 span{display:block;font-size:13px;color:var(--cream);margin-top:8px;text-shadow:none;}
+  .charPick{display:flex;gap:12px;justify-content:center;margin:16px 0;}
+  .charBtn{
+    background:var(--forest);border:3px solid var(--gold);color:var(--cream);
+    padding:10px;border-radius:4px;width:130px;cursor:pointer;text-align:center;
+  }
+  .charBtn canvas{width:64px;height:64px;image-rendering:pixelated;background:#0c150e;margin-bottom:6px;}
+  .charBtn.selected{background:var(--gold);color:var(--ink);}
+  .charBtn .name{font-family:'Press Start 2P';font-size:10px;}
+  .charBtn .sub{font-size:14px;}
+
+  #hackyOverlay .barTrack{
+    position:relative;width:100%;height:26px;background:#0c150e;border:2px solid var(--ink);margin:14px 0;
+  }
+  #hackyOverlay .zone{position:absolute;top:0;height:100%;background:var(--gold);opacity:.55;}
+  #hackyOverlay .marker{position:absolute;top:-6px;width:6px;height:38px;background:var(--rust);}
+  #hackyOverlay .tally, #seagullOverlay .tally{font-family:'Press Start 2P';font-size:12px;text-align:center;margin-bottom:6px;}
+  #seagullCountdown{font-family:'Press Start 2P';font-size:16px;color:var(--rust);min-height:20px;margin-bottom:6px;}
+  #seagullField{
+    position:relative;height:150px;overflow:hidden;border-radius:4px;
+    background:linear-gradient(180deg,#8ec9e8,#cfe9f5);border:2px solid var(--ink);
+  }
+  #seagullField .gull{
+    position:absolute;font-size:28px;cursor:pointer;user-select:none;transition:opacity .15s,transform .15s;
+  }
+  #smokePuff{transition:opacity .35s ease;}
+  #smokePuff.fadeOut{opacity:0;}
+  #ferryCountdown{font-family:'Press Start 2P';font-size:16px;color:var(--rust);min-height:20px;margin-bottom:6px;}
+  #ferryField{
+    position:relative;height:150px;overflow:hidden;border-radius:4px;
+    background:linear-gradient(180deg,#3e7c9a,#1f4f66);border:2px solid var(--ink);margin-bottom:10px;
+  }
+  #ferryBoat{position:absolute;left:6px;font-size:30px;transition:top .25s;user-select:none;}
+  .ferryObstacle{position:absolute;font-size:26px;user-select:none;}
+
+  #memoryList{max-height:52vh;overflow:auto;margin:4px 0;}
+  .memRow{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:16px;}
+  .memMark{font-family:'Press Start 2P';font-size:11px;width:16px;flex-shrink:0;}
+  .memTabs{display:flex;gap:6px;margin:2px 0 10px;flex-wrap:wrap;}
+  .memTabBtn{font-size:13px;padding:6px 10px;background:var(--forest-dark);color:var(--cream);box-shadow:none;}
+  .memTabBtn.selected{background:var(--gold);color:var(--ink);}
+  .memPane{max-height:48vh;overflow:auto;}
+  .memPane.hidden{display:none;}
+
+  footer{
+    text-align:center;font-size:12px;color:#7c8a79;padding:4px 0 6px;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="title pixel">SEQUIMMING</div>
+    <div style="text-align:right;">
+      <div class="loc" id="locLabel">—</div>
+      <div id="tripCounter" style="font-size:11px;color:#8fa88a;">Trip 0</div>
+    </div>
+  </header>
+  <div id="concertBanner" class="hidden"></div>
+
+  <div id="hud">
+    <div class="stat">⛽ <div id="gasBarOuter"><div id="gasBarInner"></div></div> <span id="gasNum" style="font-size:13px;">60</span></div>
+    <div class="stat"><span id="coin-ico">◉</span> <span id="quarterCount">0</span></div>
+    <div class="stat">🍕 <span id="pizzaCount">0</span></div>
+    <div class="stat">💿 <span id="recordCount">0</span></div>
+  </div>
+
+  <div id="stage">
+    <canvas id="game" width="512" height="384"></canvas>
+    <div id="popupLayer"></div>
+
+    <!-- Title / character select -->
+    <div id="orientationScreen" class="overlay">
+      <div class="card" style="max-width:480px;text-align:center;">
+        <h1 style="font-size:20px;">HOW THIS WORKS</h1>
+        <div class="small" style="text-align:left;line-height:1.5;margin:10px 0;">
+          • Walk around, collect quarters (◉) — pizza and records too<br>
+          • Gas stations turn quarters into gas so you can drive between towns<br>
+          • Legion Hall's always open for a show; Seattle and the Gorge only show up for a little while, so watch the banner up top when one opens<br>
+          • The more of a town you explore, the more you <i>become</i> that town — retiree, hippie, or hick. Fill a meter and its Wonder opens up<br>
+          • 🏛️ badge tracks your tribe; 📓 Memory Book tracks everything you've found
+        </div>
+        <button class="btn gold pixel" id="orientNewBtn" style="font-size:13px;padding:10px 16px;">NEW GAME</button>
+      </div>
+    </div>
+
+    <div id="titleScreen" class="overlay hidden">
+      <div class="card" style="max-width:480px;text-align:center;">
+        <h1>SEQUIMMING<span>a very small, very true road trip</span></h1>
+        <p class="small">Collect quarters. Buy gas. Chase down a show before the window closes.</p>
+        <div class="charPick">
+          <div class="charBtn selected" id="pickJesse">
+            <canvas width="32" height="32"></canvas>
+            <div class="name">JESSE</div>
+            <div class="sub">Lost Mountain.<br>far from everything</div>
+          </div>
+          <div class="charBtn" id="pickLucas">
+            <canvas width="32" height="32"></canvas>
+            <div class="name">LUCAS</div>
+            <div class="sub">five minutes from<br>anywhere that matters</div>
+          </div>
+        </div>
+        <button class="btn gold pixel" id="startBtn" style="font-size:13px;padding:12px 18px;">START</button>
+      </div>
+    </div>
+
+    <!-- Generic dialogue / shop modal -->
+    <div id="modal" class="overlay hidden">
+      <div class="card">
+        <canvas id="modalScene" class="hidden" width="300" height="120"></canvas>
+        <div class="ticketRow">
+          <h2 id="modalTitle">—</h2>
+          <p id="modalBody">—</p>
+        </div>
+        <div class="btnRow" id="modalBtns"></div>
+      </div>
+    </div>
+
+    <!-- Hacky sack minigame -->
+    <div id="hackyOverlay" class="overlay hidden">
+      <div class="card" style="text-align:center;">
+        <h2>HACKY SACK</h2>
+        <p class="small">Tap / press SPACE when the marker hits the gold zone. 8 rounds.</p>
+        <div id="hackyCountdown"></div>
+        <div class="tally">Round <span id="hackyRound">1</span> / 8 — Hits: <span id="hackyHits">0</span></div>
+        <div class="barTrack">
+          <div class="zone" id="hackyZone"></div>
+          <div class="marker" id="hackyMarker"></div>
+        </div>
+        <button class="btn rust pixel" id="hackyTapBtn" style="font-size:14px;">HIT IT</button>
+        <div><button class="btn smallBtn" id="hackyCancelBtn" style="margin-top:8px;">✕ Skip</button></div>
+      </div>
+    </div>
+
+    <!-- Count the Seagulls -->
+    <div id="seagullOverlay" class="overlay hidden">
+      <div class="card" style="text-align:center;">
+        <h2>COUNT THE SEAGULLS</h2>
+        <p class="small">Tap them before they fly off. Don't ask why. Just count.</p>
+        <div id="seagullCountdown"></div>
+        <div class="tally">Count: <span id="seagullTally">0</span></div>
+        <div id="seagullField"></div>
+        <button class="btn smallBtn" id="seagullCancelBtn" style="margin-top:8px;">✕ Skip</button>
+      </div>
+    </div>
+
+    <!-- Ferry Captain -->
+    <div id="ferryOverlay" class="overlay hidden">
+      <div class="card" style="text-align:center;">
+        <h2>FERRY CAPTAIN</h2>
+        <p class="small">Switch lanes to dodge everything. Don't ask how a car ferry is doing any of this.</p>
+        <div id="ferryCountdown"></div>
+        <div class="tally">Dodged: <span id="ferryScore">0</span> · Hits: <span id="ferryHits">0</span>/3</div>
+        <div id="ferryField"><div id="ferryBoat">⛴️</div></div>
+        <div class="btnRow" style="justify-content:center;">
+          <button class="btn rust pixel" id="ferryUpBtn" style="font-size:13px;">▲ LANE</button>
+          <button class="btn rust pixel" id="ferryDownBtn" style="font-size:13px;">▼ LANE</button>
+        </div>
+        <button class="btn smallBtn" id="ferryCancelBtn" style="margin-top:8px;">✕ Skip</button>
+      </div>
+    </div>
+
+    <!-- Purple Haze dream / teleport -->
+    <div id="dreamOverlay" class="overlay hidden" style="background:radial-gradient(circle,#6a3f8a,#241531 75%);">
+      <div class="card" style="max-width:460px;text-align:center;background:#f1e9d2;max-height:88vh;overflow:auto;">
+        <h2 style="color:#6a3f8a;">???</h2>
+        <p class="small">The lavender's doing something. Where to?</p>
+        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:8px;">Key Locations</div>
+        <div id="dreamGridLocations" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;"></div>
+        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:6px;">Special Spots &amp; Games</div>
+        <div id="dreamGridSpecial" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;"></div>
+        <button class="btn rust pixel" id="wakeUpBtn" style="font-size:13px;">WAKE UP</button>
+      </div>
+    </div>
+    <div id="smokePuff" class="hidden" style="position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);font-size:70px;">💨</div>
+
+    <!-- Win screen -->
+    <div id="winScreen" class="overlay hidden">
+      <div class="card" style="text-align:center;">
+        <canvas id="winScene" width="300" height="120"></canvas>
+        <h2 style="color:var(--forest);">YOU MADE THE SHOW</h2>
+        <p id="winText" class="small"></p>
+        <button class="btn gold pixel" id="restartBtn" style="font-size:13px;">PLAY AGAIN</button>
+      </div>
+    </div>
+
+    <div id="introHint" class="hidden">
+      <div class="box">Arrows / WASD, the pad below, or drag on the screen to move.<br>Walk onto a glowing spot to check it out.</div>
+    </div>
+
+    <!-- Memory book -->
+    <div id="memoryOverlay" class="overlay hidden">
+      <div class="card" style="max-width:480px;">
+        <h2 style="margin-bottom:2px;">MEMORY BOOK</h2>
+        <div class="memTabs">
+          <button class="btn memTabBtn selected" data-tab="moments">Moments</button>
+          <button class="btn memTabBtn" data-tab="mixtape">Mixtape</button>
+          <button class="btn memTabBtn" data-tab="crushes">Crushes</button>
+          <button class="btn memTabBtn" data-tab="civ">Tribes</button>
+          <button class="btn memTabBtn" data-tab="spending">Spending</button>
+        </div>
+        <div id="memPaneMoments" class="memPane"></div>
+        <div id="memPaneMixtape" class="memPane hidden"></div>
+        <div id="memPaneCrushes" class="memPane hidden"></div>
+        <div id="memPaneCiv" class="memPane hidden"></div>
+        <div id="memPaneSpending" class="memPane hidden"></div>
+        <div id="graduationProgress" class="small" style="text-align:left;color:#5a5340;margin:4px 0;"></div>
+        <div class="btnRow"><button class="btn gold" id="memCloseBtn">Close</button><button class="btn" id="endSummerBtn">🌅 End the Summer</button><button class="btn" id="graduationBtn">🎓 Graduation Day</button><button class="btn rust" id="resetProgressBtn">🔄 Restart Game</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div class="dpad">
+      <div class="dbtn dblank"></div><button class="dbtn" data-dir="up">▲</button><div class="dbtn dblank"></div>
+      <button class="dbtn" data-dir="left">◀</button><div class="dbtn dblank"></div><button class="dbtn" data-dir="right">▶</button>
+      <div class="dbtn dblank"></div><button class="dbtn" data-dir="down">▼</button><div class="dbtn dblank"></div>
+    </div>
+    <div id="rightControls">
+      <button id="soundBtn" class="btn smallBtn">🔊 Sound</button>
+      <button id="civBadge" class="btn smallBtn hidden">🏛️ —</button>
+      <button id="ryanBtn" class="btn smallBtn hidden">🚚 Ryan</button>
+      <button id="dreamBtn" class="btn smallBtn hidden">💭</button>
+      <button id="memoryBtn" class="btn smallBtn">📓 Memory Book</button>
+      <div id="hint">Glowing spots are places to check out. Find your car to drive somewhere new.</div>
+    </div>
+  </div>
+  <footer class="pixel" style="font-size:8px;">LOST MTN · SEQUIM · PENINSULA COLLEGE · PORT TOWNSEND</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const TILE = 32;
+const COLS = 16, ROWS = 12;
+const LEGION_COST = 14, SEATTLE_COST = 38, GORGE_COST = 65;
+
+/* ---------- Maps ---------- */
+// # wall/tree   ~ water   C campus building (solid)
+// . grass   H Jesse house  L Lucas house  T Taco Bell  G gas station
+// D downtown/flavor   V car (travel)   K Ryan's truck   X hacky sack lawn
+// Z pizza   R record store   W pier   F ferry dock   q quarter
+// a Rose Theater  b Silverwater Cafe  c Sirens Pub  e Chetzemoka Park  g Legion Hall
+// h Hurricane Coffee  i Grocery  j Dairy Queen  k Taco Time
+// n Chickens  o Shooting range  p Camping spot  u The Pool
+// PA Waterfront: B bookseller  S shoe store  O cafes/restaurants  E waterfront trail
+//   P pier (zone)  Y Coho ferry dock (Victoria)  (K Ryan's parking lot, w deli, x mill here too)
+
+const MAPS = {
+  lostmountain: {
+    label: "Lost Mountain",
+    rows: [
+      "################",
+      "#....q.........#",
+      "#..H....#####..#",
+      "#.......#...#..#",
+      "#..n....#...#..#",
+      "#..........n...#",
+      "#....##..##....#",
+      "#....#....#..o.#",
+      "#..........q...#",
+      "#..p........V..#",
+      "#....y.........#",
+      "################",
+    ]
+  },
+  sequim: {
+    label: "Sequim",
+    rows: [
+      "################",
+      "#h.....##.....L#",
+      "#..i.......u...#",
+      "#....T....G....#",
+      "#..............#",
+      "#..q......q....#",
+      "#....####..j...#",
+      "#....#..#..D...#",
+      "#....#..#..k...#",
+      "#............V.#",
+      "#..........z...#",
+      "################",
+    ]
+  },
+  campus: {
+    label: "Peninsula College",
+    rows: [
+      "################",
+      "#..............#",
+      "#..mCCC..CCCC..#",
+      "#..C..C..C..C..#",
+      "#..CCCC..CCCC..#",
+      "#..............#",
+      "#....q..q......#",
+      "#......X.......#",
+      "#..q........q..#",
+      "#..G...........#",
+      "#..........V...#",
+      "################",
+    ]
+  },
+  porttownsend: {
+    label: "Port Townsend",
+    rows: [
+      "################",
+      "#..a.b.c.......#",
+      "#..Z......R....#",
+      "#..........e...#",
+      "#......D.......#",
+      "#..q........q..#",
+      "#.......g......#",
+      "#..........V...#",
+      "#..G...........#",
+      "#....WWWWWW....#",
+      "#~~~~WWWWWW~~~~#",
+      "#~~~~~~F~~~~~~~#",
+    ]
+  },
+  pawaterfront: {
+    label: "PA Waterfront",
+    rows: [
+      "################",
+      "#B..S..O..w...V#",
+      "#...........x..#",
+      "#..E...........#",
+      "#....q.....q...#",
+      "#......E.......#",
+      "#..............#",
+      "#...K..........#",
+      "#....PPPPP.....#",
+      "#~~~~PPPPPY~~~~#",
+      "#~~~~~~~~~~~~~~#",
+      "################",
+    ]
+  }
+};
+
+const SOLID = new Set(["#","~","C"]);
+const INTERACTIVE = new Set(["H","L","T","G","D","V","K","X","Z","R","W","F",
+  "a","b","c","e","g","h","i","j","k","m","n","o","p","u","y","z","w","x",
+  "B","S","O","E","P","Y"]);
+const ZONE_CHARS = new Set(["W","P"]);
+
+const TRAVEL = {
+  lostmountain: { sequim:{cost:17,label:"Sequim"} },
+  sequim: {
+    lostmountain:{cost:17,label:"Lost Mountain"},
+    campus:{cost:20,label:"Peninsula College"},
+    porttownsend:{cost:30,label:"Port Townsend"}
+  },
+  campus: {
+    sequim:{cost:20,label:"Sequim"},
+    porttownsend:{cost:25,label:"Port Townsend"},
+    lakecrescent:{cost:10,label:"Lake Crescent",scene:true},
+    pawaterfront:{cost:5,label:"PA Waterfront"}
+  },
+  porttownsend: {
+    sequim:{cost:30,label:"Sequim"},
+    campus:{cost:25,label:"Peninsula College"},
+    fortworden:{cost:8,label:"Fort Worden",scene:true}
+  },
+  pawaterfront: {
+    campus:{cost:5,label:"Peninsula College"},
+    sequim:{cost:22,label:"Sequim"}
+  }
+};
+
+const ENTRY_SPAWN = {
+  lostmountain: {x:13.5,y:8},
+  sequim: {x:12.5,y:8},
+  campus: {x:10.5,y:9},
+  porttownsend: {x:10.5,y:6},
+  pawaterfront: {x:7.5,y:6}
+};
+
+/* ---------- State ---------- */
+const state = {
+  character: "jesse",
+  mapKey: "lostmountain",
+  px: 3.5*TILE, py: 3.5*TILE,
+  facing: "down",
+  keys: {up:false,down:false,left:false,right:false},
+  gas: 60,
+  maxGas: 100,
+  quarters: 4,
+  pizza: 0,
+  records: 0,
+  lastTileKey: null,
+  flags: {
+    lucasMomBonus:false,
+    jesseCouchBonus:false,
+    tacoBellFound:false,
+    ryanDriveCooldown:0,
+    momPopCooldown:0,
+    steph:0, anina:0, tara:0, sister:0,
+    pierVisited:false, chetzemokaVisited:false,
+    fortWordenVisited:false, lakeCrescentVisited:false, paPierVisited:false,
+    poolVisited:false, dianeErrand:false, hackySackWon:false, hackySackCooldown:0,
+    seagullBest:0, ferryDaydream:false, metRyan:false, carlyBallCooldown:0, laurenDream:false,
+    ferryGameBest:0, foundLavender:false, graduated:false, classroomVisits:0, carlyDiscovered:false,
+    carlyWasAway:false, carlyBallTouched:false, kineticRaceSeen:false, millSiteVisited:false,
+    ninaChaseCooldown:0, ninaChaseSeen:false, aggroCooldown:0, waterfrontPierVisited:false, cohoVisited:false,
+    waterfrontTrailVisited:false, booksellerVisited:false, shoeStoreVisited:false, cafesVisited:false,
+    trebuchetFired:false, poolWonderDone:false, raceWonderDone:false
+  },
+  civVisited:{},
+  wonders:{ sequim:false, porttownsend:false, hick:false },
+  breakIns:{},
+  tripCount:0,
+  prices: { gas:10, record:5, pizza:3 },
+  spending: { gas:0, pizza:0, records:0, legion:0, misc:0 },
+  recordTitles: [],
+  jobs: { given:false, holder:null, place:null },
+  concert: { windowType:null, windowTravelsLeft:0, gorgeCooldownTravels:0, legionVisits:0, seattleAttended:false, gorgeAttended:false, everOpened:false },
+  companion: { joined:false, visible:false, x:0, y:0, history:[] },
+  carly: { x:0, y:0, history:[], visible:false, moving:false, appeared:false, away:false, justReturned:false, arriveTime:0 },
+  ryanNPC: { present:false, x:0, y:0, targetX:0, targetY:0, wanderTimer:0 },
+  trailTimer:0,
+  dragging:false,
+  dragTarget:null,
+  isMoving:false,
+  paused:false,
+  totalQuartersEver:4
+};
+
+const PALETTE = {
+  jesse: {hair:"#5b3a24", shirt:"#3f5d3f", pants:"#2e2a26", skin:"#e8b98f", accessory:null},
+  lucas: {hair:"#2b2622", shirt:"#28313a", pants:"#4a4238", skin:"#e3b284", accessory:"beret"}
+};
+const CARLY_PALETTE = {hair:"#6a4226", shirt:"#3a6a8a", pants:"#2a2a2a", skin:"#e8b98f", accessory:"cap"};
+const RYAN_PALETTE = {hair:"#8a7a4a", shirt:"#5a4a3a", pants:"#3a3a3a", skin:"#d9a877", accessory:null};
+
+function otherCharacter(){ return state.character==="jesse" ? "lucas" : "jesse"; }
+function charName(c){ return c==="jesse" ? "Jesse" : "Lucas"; }
+
+/* ---------- Date / family NPCs (light flavor) ---------- */
+const NPCS = {
+  sequim: [{id:"steph", col:8, row:4, name:"Steph", stageFlag:"steph", stages:4,
+    pal:{hair:"#4a3324", shirt:"#6a4a5a", pants:"#3a3a3a", skin:"#e8b98f", accessory:null}}],
+  campus: [
+    {id:"anina", col:6, row:6, name:"Anina", stageFlag:"anina", stages:4,
+      pal:{hair:"#1a1a1a", shirt:"#3a2a3a", pants:"#2a2a2a", skin:"#d9a877", accessory:null}},
+    {id:"gino", col:12, row:1, name:"Gino", stageFlag:"gino", reward:5,
+      pal:{hair:"#1a1a1a", shirt:"#1a1a2a", pants:"#2a2a2a", skin:"#d9a877", accessory:null}}
+  ],
+  porttownsend: [
+    {id:"tara", col:12, row:2, name:"Tara", stageFlag:"tara", stages:4,
+      pal:{hair:"#8a5a2a", shirt:"#4a5a6a", pants:"#33313a", skin:"#e3b284", accessory:null}},
+    {id:"waitress", col:5, row:2, name:"The Waitress", stageFlag:"waitress", stages:4,
+      pal:{hair:"#3a2a1f", shirt:"#c1553b", pants:"#2a2a2a", skin:"#e3b284", accessory:null}}
+  ],
+  lostmountain: []
+};
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+const NPC_DIALOGUE = {
+  steph: {
+    first: [
+      "Someone's sitting on the curb, flipping through a battered notebook. \"Oh — hey,\" she says, closing it fast like you weren't supposed to see. Steph, from a class you don't actually share but keep running into anyway.",
+      "You keep ending up at the same coffee shop at the same time, which either means something or means Sequim only has four places to be. Steph swears it's a coincidence. Neither of you believes that."
+    ],
+    crush: [
+      "Steph starts leaving mix CDs in increasingly unsubtle places — your locker, the dashboard, once just directly in your hands with zero explanation. Neither of you has said anything real yet. This has been going on for three weeks.<br><br><span class='small'>+2 quarters — found one taped under your seat with change stuck to it</span>",
+      "Steph starts showing up wherever you already are, always with a very good, very unrelated reason. Neither of you has said anything real yet.<br><br><span class='small'>+2 quarters — she 'owed' you for something, unspecified</span>"
+    ],
+    resolution: [
+      "It almost happens — parking lot, engine running — until Steph mentions, completely straight-faced, how glad she is you're 'the kind of friend who actually listens to the CDs.' The air leaves the moment so fast you both hear it go. You still trade CDs. It's fine. Everything's fine.<br><br><span class='small'>+4 quarters — she still owes you for gas from that one time, unrelated, definitely unrelated</span>",
+      "You finally ask, actual words, actual question. Steph looks at you like you've just informed her the sky is a color she wasn't aware of. \"Oh — I just really like your taste in music,\" she says, kindly, devastatingly. You'll be fine. You will not be fine tonight specifically.<br><br><span class='small'>+4 quarters — guilt money, though neither of you calls it that</span>"
+    ],
+    repeat: ["Steph gives you a look that means several things at once.", "\"We're being normal about this,\" Steph says, not being normal about this.", "Steph's decided the CD thing was 'a whole era' and won't elaborate."]
+  },
+  anina: {
+    first: [
+      "A beat-up 70s coupe rattles past and parks crooked across two spaces. The girl who gets out doesn't seem to care. \"You're in my seat,\" she says, dead serious, about a patch of grass. Turns out her name's Anina.",
+      "You're minding your own business at the gas station when a car that shouldn't legally still run pulls up, blasting something neither of you can name. \"You know this song?\" the driver yells. Lucas does not know the song. Lucas pretends extremely hard to know the song."
+    ],
+    crush: [
+      "Anina starts 'happening to drive by' with suspicious frequency. Lucas has never once acknowledged this as a pattern. It is extremely a pattern.<br><br><span class='small'>+2 quarters — she 'forgot' change in the cupholder, again</span>",
+      "Anina's taken to leaving notes under the windshield wiper whenever she spots the car parked somewhere. They're all insults. Lucas has started keeping them.<br><br><span class='small'>+2 quarters — one note came with a quarter taped to it, for reasons unclear</span>",
+      "One evening, parked down by the river, Lucas steps out for a minute. Anina throws it in reverse without checking her mirror and very nearly does not miss him. He survives. She swears up and down she saw him back there the whole time. He does not believe her. Neither will you.<br><br><span class='small'>+2 quarters — guilt money, though she'd never call it that</span>"
+    ],
+    resolution: [
+      "Weeks later you spot Anina's car at the far end of a parking lot, someone else entirely riding shotgun, laughing at something Lucas will never get to know. He doesn't say anything the whole drive home. Neither do you.<br><br><span class='small'>+4 quarters — Jesse buys the gas this time, no comment necessary</span>",
+      "You catch Anina at Lake Crescent again, except this time there's someone else's jacket around her shoulders. She waves like nothing's different, because to her, nothing is. Lucas waves back. It takes him a week to stop thinking about it. It takes him a month to admit that.<br><br><span class='small'>+4 quarters — small comforts, mostly pizza-shaped</span>"
+    ],
+    repeat: ["Anina cranks the stereo like nothing happened. Everything happened.", "Lucas is being extremely normal about Anina. Deeply, unconvincingly normal.", "Anina gives Lucas a look that could mean anything. Lucas short-circuits.", "\"Remember the river thing?\" is now a complete sentence that ends every argument. Nobody has to specify which river thing."]
+  },
+  tara: {
+    first: [
+      "Someone's crouched by the used bins, same aisle as you. \"If you touch the Outkast before me I will fight you,\" she says, not even looking up. Tara, apparently, has strong opinions about the bins.",
+      "You reach for the same CD at the same time and there's a full three-second standoff before she just takes it. \"I was here first,\" she says, which is a lie, and you both know it's a lie."
+    ],
+    crush: [
+      "The used-bin arguments have started lasting way longer than any argument about CDs reasonably should. You both know it. Neither of you says it.<br><br><span class='small'>+2 quarters — she 'owes you' from losing a bet about a bassline</span>",
+      "Tara starts holding CDs back for you specifically, then acting annoyed when you actually show up to get them.<br><br><span class='small'>+2 quarters — 'consider it a finder's fee'</span>"
+    ],
+    resolution: [
+      "You spend two weeks convinced the whole bridge-section argument was flirting. Then you overhear her have the exact same argument, word for word, with a total stranger at the counter. It's not you. It was never you. It's just how Tara argues about music.<br><br><span class='small'>+4 quarters — she still 'owes you' from the original bet, technically</span>",
+      "You work up the nerve to say something real, finally. Tara blinks, genuinely thrown, and says \"Wait, I thought we were just—\" and doesn't finish it, because she doesn't have to. You will never bring up the bridge again. You will absolutely bring up the bridge again.<br><br><span class='small'>+4 quarters — an apology, sort of, in coin form</span>"
+    ],
+    repeat: ["Tara's got a new argument loaded and ready.", "\"We are never discussing the bridge thing again,\" Tara says, discussing the bridge thing again.", "Tara holds up a CD. It's a peace offering. It is also a challenge."]
+  },
+  waitress: {
+    first: [
+      "The waitress swings by with a basket of goldfish crackers you didn't order. \"On the house,\" she says, mostly to Lucas, who has gone very quiet. She's only here some nights — you're not sure of her schedule, just that Lucas has memorized it.",
+      "Lucas orders the same thing he always orders, which she already knew, because she starts making it before he finishes ordering. He finds this devastating."
+    ],
+    crush: [
+      "She lets Lucas flip through the crate behind the counter and pick whatever plays next — not something she does for anyone else who asks, or so Lucas has extensively, unnecessarily confirmed.<br><br><span class='small'>+2 quarters — 'employee discount,' she says, though Lucas is not an employee</span>",
+      "She starts putting goldfish crackers on his salad instead of croutons, without him ever having to ask. Lucas has decided this means something. Lucas has decided several things mean something.<br><br><span class='small'>+2 quarters — 'you looked hungry,' is all she says</span>"
+    ],
+    resolution: [
+      "Lucas finally asks — actual words, actual question. She looks surprised, not in the good way. \"Oh — I just felt bad for you,\" she says, as gently as she can manage. \"You always look so happy when I let you play a record. Or the goldfish crackers, whatever, I don't even know why I started doing that.\" She smiles the same way she always has, waiting on the jerry-rigged pizza elevator to clank its way up from the kitchen, and it means exactly as little as it always did.<br><br><span class='small'>+4 quarters — she comps the order out of guilt; Lucas is too devastated to argue</span>",
+      "Lucas asks. She says she's flattered, genuinely, and then says the words \"like a little brother\" out loud, in public, near other people. He orders his usual. She makes it exactly right, same as always — because that was never about him. It was just the job.<br><br><span class='small'>+4 quarters — free breadsticks, offered like a white flag</span>"
+    ],
+    repeat: ["She's on shift, and Lucas is suddenly very interested in a menu he's had memorized for years.", "Goldfish crackers again. Lucas is unreasonably happy about this.", "She waves. Lucas waves back about a full minute too late, again."]
+  },
+  gino: {
+    first: ["Someone in a suit better tailored than anything a sixteen-year-old should own is leaning against the lockers. \"Gino,\" he says, extending a hand like he's closing a deal. You're pretty sure you just closed a deal."],
+    date: "Gino lends you twenty bucks without blinking and waves off any mention of paying it back. This is somehow the scariest thing that's happened all week.<br><br><span class='small'>+5 quarters — 'a gift,' Gino insists, 'from the family'</span>",
+    repeat: [
+      "Gino's talking about his family's 'import business' again. Nobody's ever seen anything actually get imported.",
+      "Gino offers you a ride home in a car that costs more than most houses. You don't ask where the money's from.",
+      "Gino invites the whole class over. The house has a moat. An actual moat. Nobody mentions the moat.",
+      "Gino asks how your 'concert fund' is coming along. You never told him about the concert fund."
+    ]
+  },
+  carly: {
+    first: "Carly's tagging along again, five years younger and zero interest in leaving. \"What are you guys doing? Can I come?\" She's already coming.",
+    date: "She tags along without asking, as usual, and actually finds a quarter you somehow missed. \"See, I'm helpful,\" she says, insufferably smug.<br><br><span class='small'>+2 quarters — begrudgingly earned</span>",
+    repeat: [
+      "Carly's talking about fastpitch again — she's the starting pitcher and extremely unbothered about it.",
+      "\"The team's doing batting practice again,\" Carly mentions, entirely too casually. Your car has a new dent. You have questions. She does not have answers.",
+      "Carly's got approximately fourteen friends over today. You're not sure where they all sleep.",
+      "\"You're being weird,\" Carly informs you, unprompted.",
+      "Carly's practicing her windup against the side of the house. The side of the house is losing."
+    ]
+  }
+};
+const RYAN_LINES = [
+  "\"Working on something,\" Ryan says, gesturing at a truck bed full of parts that used to be several different things. He will not elaborate.",
+  "\"Just got back from the range,\" Ryan says. He did not bring the truck. Nobody asks why he was on foot.",
+  "\"I'm building a thing,\" Ryan says. It appears to be a trebuchet. Or a very ambitious mailbox. Unclear.",
+  "Ryan's found a new junkyard. He will not say where. He is extremely proud of this.",
+  "\"The foghorn's louder now,\" Ryan says, entirely unprompted, gesturing at the truck. It was already very loud.",
+  "Ryan is doing donuts in the church parking lot again. He waves like this is completely normal.",
+  "\"I've almost got the trebuchet load-bearing,\" Ryan reports. Nobody asked for an update. He gave one anyway."
+];
+
+const COMPANION_LINES = [
+  "\"You ever notice how weird Taco Bell parking lots are at night?\"",
+  "\"I give this car six more months, tops.\"",
+  "\"We should burn a CD before we go anywhere else.\"",
+  "\"If we skip lunch we can almost afford a whole tank.\"",
+  "\"Hacky sack's basically a sport if you squint.\"",
+  "\"Someone already burned the new album onto a CD. Obviously.\"",
+  "\"I'm not saying we should drive to the Gorge tonight. I'm just saying we could.\"",
+  "\"Quarters. Always quarters. Feels like a part-time job at this point.\"",
+  "\"If I learn one more Kansas riff I'm basically starting a band.\"",
+  "\"We should just move to Port Townsend and run the record store. Full plan. I've thought about it.\""
+];
+
+const CD_POOL = [
+  "Outkast — Stankonia",
+  "The Offspring — Americana",
+  "Queen — Greatest Hits",
+  "Endfest '03 (107.7 The End compilation)",
+  "Tool — Ænima",
+  "A Perfect Circle — Mer de Noms",
+  "The Presidents of the United States of America"
+];
+
+/* ---------- Day-trip scenes (no economy, just vibes) ---------- */
+const SCENES = {
+  fortworden: { title:"FORT WORDEN", flag:"fortWordenVisited", image:"fortworden", lines:[
+    "You wander the old bunkers until it's too dark to see where you're stepping, then sit on the bluff and watch the sun go down over the strait.",
+    "You end up staying way later than planned, flashlights out, daring each other into the darker parts of the fort.",
+    "You pitch a tent without really planning to and just... stay. Nobody comes looking."
+  ]},
+  lakecrescent: { title:"LAKE CRESCENT", flag:"lakeCrescentVisited", image:"lakecrescent", lines:[
+    "The water's that impossible blue-green it always is. You skip rocks until your arms hurt and don't talk about much of anything.",
+    "You park somewhere with a view and just sit on the hood for an hour, not really doing anything else.",
+    "You try to find a spot to swim, decide it's too cold, and sit on the shore complaining about it anyway."
+  ]},
+  papier: { title:"PA WATERFRONT", flag:"paPierVisited", image:"papier", lines:[
+    "You end up on the pier with lunch from somewhere forgettable, half-listening to CBC Radio Victoria drift in and out, watching the boats.",
+    "You walk the whole waterfront and back for no reason, just talking.",
+    "You sit on the pier long enough that the tide visibly changes.",
+    "The Coho's coming in from Victoria, and you both watch it dock like it's arriving from somewhere important — which, compared to here, it kind of is. Distant Victoria: forever a rumor of a bigger life just across the water.",
+    "The little art gallery's open, mostly empty, same as the acres of parking around it built for crowds that never quite show. You wander through anyway. It's actually not bad."
+  ]}
+};
+
+/* ---------- Canvas ---------- */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+function mapDef(){ return MAPS[state.mapKey]; }
+function tileAt(col,row){
+  const m = mapDef();
+  if(row<0||row>=ROWS||col<0||col>=COLS) return "#";
+  return m.rows[row][col];
+}
+function setTile(col,row,ch){
+  const m = mapDef();
+  const r = m.rows[row];
+  m.rows[row] = r.substring(0,col) + ch + r.substring(col+1);
+}
+
+/* ---------- Drawing helpers ---------- */
+function drawTileBg(col,row,ch){
+  const x = col*TILE, y = row*TILE;
+  let base = "#4c7a44";
+  if(state.mapKey==="porttownsend") base = "#5b8a4f";
+  if(state.mapKey==="lostmountain") base = "#3f6a3f";
+  if(ch==="#"){ ctx.fillStyle="#20402a"; ctx.fillRect(x,y,TILE,TILE);
+    ctx.fillStyle="#5b3a24"; ctx.fillRect(x+TILE/2-3,y+TILE-11,6,8);
+    ctx.fillStyle="#2f5c38"; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2-2,TILE*0.34,0,7); ctx.fill();
+    ctx.fillStyle="#3f7048"; ctx.beginPath(); ctx.arc(x+TILE/2-4,y+TILE/2-6,TILE*0.2,0,7); ctx.fill();
+    return;
+  }
+  if(ch==="~"){ ctx.fillStyle="#2a5b74"; ctx.fillRect(x,y,TILE,TILE);
+    ctx.strokeStyle="#3e7c9a"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x+4,y+TILE/2); ctx.lineTo(x+TILE-4,y+TILE/2); ctx.stroke();
+    return;
+  }
+  ctx.fillStyle = base; ctx.fillRect(x,y,TILE,TILE);
+  if((col+row)%5===0){ ctx.fillStyle="rgba(0,0,0,0.05)"; ctx.fillRect(x,y,TILE,TILE); }
+  const seed = (col*37+row*17)%9;
+  if(seed<4){
+    const ox = 5+(seed*7)%20, oy = 6+(seed*11)%20;
+    ctx.fillStyle = seed%2===0 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)";
+    ctx.fillRect(x+ox,y+oy,2,4);
+  }
+
+  if(INTERACTIVE.has(ch)){
+    const pulse = 0.30 + 0.16*Math.sin(Date.now()/380 + (col*3+row*7));
+    ctx.fillStyle = `rgba(232,185,74,${pulse.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,TILE*0.46,0,7); ctx.fill();
+  }
+
+  switch(ch){
+    case "C": drawBuilding(x,y,"#7a6a52","#4a3f2f"); break;
+    case "H": drawBuilding(x,y,"#8a6a4a","#5b3a24",true); break;
+    case "L": drawBuilding(x,y,"#5a6a7a","#2b3642",true); break;
+    case "T": drawBuilding(x,y,"#c1553b","#7c3120",true,"T"); break;
+    case "G": drawBuilding(x,y,"#c9a94a","#7a5f22",true,"⛽"); break;
+    case "D": drawBuilding(x,y,"#7a8a6a","#4a5940",true,"$"); break;
+    case "Z": drawBuilding(x,y,"#c9843b","#7a4c1f",true,"🍕"); break;
+    case "R": drawBuilding(x,y,"#5a4a6a","#332943",true,"♪"); break;
+    case "a": drawBuilding(x,y,"#5a3a4a","#2f1f2f",true,"🎬"); break;
+    case "b": drawBuilding(x,y,"#6a5a3a","#3f331f",true,"🍽"); break;
+    case "c": drawBuilding(x,y,"#3a4a5a","#1f2733",true,"🍺"); break;
+    case "e": drawBuilding(x,y,"#4a6a3a","#26401f",true,"🌳"); break;
+    case "g": drawBuilding(x,y,"#8a7a4a","#4f4324",true,"🎸"); break;
+    case "h": drawBuilding(x,y,"#4a3324","#2a1a12",true,"☕"); break;
+    case "i": drawBuilding(x,y,"#6a8a5a","#334a26",true,"🛒"); break;
+    case "j": drawBuilding(x,y,"#8a3a4a","#4f1f26",true,"🍦"); break;
+    case "k": drawBuilding(x,y,"#c9843b","#7a4c1f",true,"🌮"); break;
+    case "m": drawBuilding(x,y,"#7a6a52","#4a3f2f",true,"🎓"); break;
+    case "V": drawCar(x,y); break;
+    case "K": drawTruck(x,y); break;
+    case "X": drawLawnSpot(x,y); break;
+    case "W": drawPier(x,y); break;
+    case "F": drawDock(x,y); break;
+    case "n": drawChickens(x,y); break;
+    case "o": drawTarget(x,y); break;
+    case "p": drawTent(x,y); break;
+    case "u": drawPool(x,y); break;
+    case "y": drawBall(x,y); break;
+    case "z": drawLavender(x,y); break;
+    case "w": drawBuilding(x,y,"#8a7a5a","#4a3f26",true,"🥪"); break;
+    case "x": drawMillSite(x,y); break;
+    case "B": drawBuilding(x,y,"#6a5a7a","#3a2f4a",true,"📖"); break;
+    case "S": drawBuilding(x,y,"#7a6a4a","#4a3f2a",true,"👟"); break;
+    case "O": drawBuilding(x,y,"#5a4a3a","#2f2419",true,"☕"); break;
+    case "E": drawTrail(x,y); break;
+    case "P": drawPier(x,y); break;
+    case "Y": drawCoho(x,y); break;
+    case "q": drawCoin(x,y); break;
+  }
+}
+function drawTrail(x,y){
+  ctx.fillStyle="#8a744a";
+  ctx.beginPath(); ctx.moveTo(x+6,y+TILE); ctx.lineTo(x+13,y+4); ctx.lineTo(x+19,y+4); ctx.lineTo(x+26,y+TILE); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,.2)"; ctx.lineWidth=1;
+  for(let i=8;i<TILE;i+=7){ ctx.beginPath(); ctx.moveTo(x+8,y+i); ctx.lineTo(x+24,y+i); ctx.stroke(); }
+  // little trail post
+  ctx.fillStyle="#5c4632"; ctx.fillRect(x+3,y+10,3,12);
+  ctx.fillStyle="#4a7a5a"; ctx.beginPath(); ctx.arc(x+27,y+9,4,0,7); ctx.fill();
+}
+function drawCoho(x,y){
+  drawPier(x,y);
+  ctx.fillStyle="#e9e4d6"; ctx.fillRect(x+4,y+8,TILE-8,10);
+  ctx.fillStyle="#2f5c38"; ctx.fillRect(x+4,y+8,TILE-8,3);
+  ctx.fillStyle="#1A1A1A"; ctx.font="7px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("COHO", x+TILE/2, y+16);
+  ctx.fillStyle="#b5482f"; ctx.fillRect(x+TILE/2-2,y+3,4,5);
+}
+
+function drawBuilding(x,y,wall,roof,small,icon){
+  const pad = small?4:2;
+  ctx.fillStyle = roof; ctx.fillRect(x+pad-2,y+pad-4,TILE-2*pad+4,10);
+  ctx.fillStyle = wall; ctx.fillRect(x+pad,y+pad+4,TILE-2*pad,TILE-2*pad-4);
+  ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.strokeRect(x+pad,y+pad+4,TILE-2*pad,TILE-2*pad-4);
+  ctx.fillStyle="rgba(255,255,255,0.3)";
+  ctx.fillRect(x+pad+3,y+pad+9,4,4);
+  ctx.fillRect(x+TILE-pad-7,y+pad+9,4,4);
+  if(icon){
+    ctx.fillStyle="#fff"; ctx.font="12px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(icon, x+TILE/2, y+TILE-8);
+  }
+}
+function drawCar(x,y){
+  ctx.fillStyle="#cf3f3f"; ctx.fillRect(x+4,y+14,TILE-8,12);
+  ctx.fillStyle="#8f2626"; ctx.fillRect(x+7,y+8,TILE-14,10);
+  ctx.fillStyle="#222"; ctx.beginPath(); ctx.arc(x+9,y+26,3,0,7); ctx.arc(x+TILE-9,y+26,3,0,7); ctx.fill();
+}
+function drawTruck(x,y){
+  ctx.fillStyle="#2f5f8a"; ctx.fillRect(x+3,y+12,TILE-6,14);
+  ctx.fillStyle="#1e3f5c"; ctx.fillRect(x+6,y+6,14,10);
+  ctx.fillStyle="#222"; ctx.beginPath(); ctx.arc(x+9,y+27,3,0,7); ctx.arc(x+TILE-9,y+27,3,0,7); ctx.fill();
+}
+function drawLawnSpot(x,y){
+  ctx.strokeStyle="#e8b94a"; ctx.setLineDash([3,3]); ctx.lineWidth=2;
+  ctx.strokeRect(x+5,y+5,TILE-10,TILE-10); ctx.setLineDash([]);
+  ctx.fillStyle="#e8b94a"; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,4,0,7); ctx.fill();
+}
+function drawPier(x,y){
+  ctx.fillStyle="#8a6a4a"; ctx.fillRect(x,y,TILE,TILE);
+  ctx.strokeStyle="rgba(0,0,0,.25)";
+  for(let i=6;i<TILE;i+=8){ ctx.beginPath(); ctx.moveTo(x,y+i); ctx.lineTo(x+TILE,y+i); ctx.stroke(); }
+}
+function drawDock(x,y){
+  drawPier(x,y);
+  ctx.fillStyle="#e8b94a"; ctx.fillRect(x+6,y+4,TILE-12,8);
+  ctx.fillStyle="#1A1A1A"; ctx.font="9px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("FERRY", x+TILE/2, y+11);
+}
+function drawCoin(x,y){
+  const bob = Math.sin(Date.now()/200 + x)*2;
+  ctx.fillStyle="#e8b94a"; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2+bob,6,0,7); ctx.fill();
+  ctx.strokeStyle="#a5822c"; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle="rgba(255,255,255,0.75)";
+  ctx.beginPath(); ctx.arc(x+TILE/2-2,y+TILE/2+bob-2,1.4,0,7); ctx.fill();
+}
+
+/* ---------- Oregon-Trail-style scene banners ---------- */
+function drawMtnRow(c,w,peakY,baseY,color){
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(0, baseY);
+  const peaks = 4;
+  for(let i=0;i<=peaks;i++){
+    const px = (w/peaks)*i;
+    const py = i%2===0 ? peakY : peakY + (baseY-peakY)*0.35;
+    c.lineTo(px,py);
+  }
+  c.lineTo(w, baseY);
+  c.closePath();
+  c.fill();
+}
+function drawSceneImage(canvasEl, key){
+  const c = canvasEl.getContext("2d");
+  c.imageSmoothingEnabled = false;
+  const w = canvasEl.width, h = canvasEl.height;
+  c.clearRect(0,0,w,h);
+
+  if(key==="fortworden"){
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#3e6f9a");
+    grad.addColorStop(0.55,"#e8a568");
+    grad.addColorStop(1,"#f4c98a");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    c.fillStyle = "#2a5b74"; c.fillRect(0,h*0.66,w,h*0.08);
+    // lighthouse, right side
+    const lx = w*0.78, ly = h*0.22;
+    c.fillStyle = "#8a6a4a"; c.fillRect(lx-20, ly+h*0.28, 30, h*0.18);
+    c.fillStyle = "#b5482f"; c.fillRect(lx-20, ly+h*0.24, 30, 5);
+    c.fillStyle = "#e9e4d6"; c.fillRect(lx-6, ly, 12, h*0.44);
+    c.fillStyle = "#b5482f";
+    c.beginPath(); c.moveTo(lx-9,ly); c.lineTo(lx+9,ly); c.lineTo(lx,ly-14); c.closePath(); c.fill();
+    c.fillStyle = "#2a2a2a"; c.fillRect(lx-4, ly+4, 8, 6);
+    // concrete bunker, foreground left
+    const bx = w*0.03, by = h*0.46, bw = w*0.55, bh = h*0.34;
+    c.fillStyle = "#7a7a70"; c.fillRect(bx,by,bw,bh);
+    c.fillStyle = "#5c5c52"; c.fillRect(bx,by,bw,7);
+    for(let i=0;i<4;i++){
+      c.fillStyle="#24241f";
+      c.fillRect(bx+8+i*(bw/4), by+bh*0.32, bw/4-10, bh*0.6);
+    }
+    c.fillStyle="#8a8a7c";
+    c.beginPath(); c.moveTo(bx+bw*0.32, by); c.lineTo(bx+bw*0.68, by); c.lineTo(bx+bw*0.5, by-h*0.14); c.closePath(); c.fill();
+    // foreground brush silhouette
+    c.fillStyle = "#20402a"; c.fillRect(0, h*0.88, w, h*0.12);
+    for(let i=0;i<w;i+=10){
+      c.beginPath(); c.moveTo(i,h*0.88); c.lineTo(i+5,h*0.8); c.lineTo(i+10,h*0.88); c.closePath(); c.fill();
+    }
+  } else if(key==="lakecrescent"){
+    const grad = c.createLinearGradient(0,0,0,h*0.52);
+    grad.addColorStop(0,"#bfe0f0");
+    grad.addColorStop(1,"#eaf6fb");
+    c.fillStyle = grad; c.fillRect(0,0,w,h*0.52);
+    drawMtnRow(c, w, h*0.22, h*0.4, "#6b8a98");
+    drawMtnRow(c, w, h*0.3, h*0.5, "#3f6a4a");
+    c.fillStyle = "#1f4f66"; c.fillRect(0,h*0.5,w,h*0.5);
+    c.save();
+    c.globalAlpha = 0.32;
+    c.translate(0, h);
+    c.scale(1,-1);
+    drawMtnRow(c, w, h*0.5, h*0.68, "#3f6a4a");
+    c.restore();
+    c.strokeStyle="rgba(255,255,255,0.22)"; c.lineWidth=1;
+    for(let i=0;i<4;i++){ c.beginPath(); c.moveTo(0,h*0.62+i*11); c.lineTo(w,h*0.62+i*11+4); c.stroke(); }
+  } else if(key==="ferrydream"){
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#8ec9e8");
+    grad.addColorStop(1,"#cfe9f5");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    c.fillStyle = "#1f4f66"; c.fillRect(0,h*0.62,w,h*0.4);
+    c.strokeStyle="rgba(255,255,255,0.3)"; c.lineWidth=1;
+    for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(0,h*0.7+i*10); c.lineTo(w,h*0.7+i*10+3); c.stroke(); }
+    // gulls
+    c.strokeStyle="#fff"; c.lineWidth=2;
+    [[w*0.18,h*0.14],[w*0.5,h*0.08],[w*0.78,h*0.16]].forEach(([gx,gy])=>{
+      c.beginPath(); c.moveTo(gx-6,gy); c.quadraticCurveTo(gx,gy-5,gx+6,gy); c.stroke();
+    });
+    // ferry hull
+    const fx=w*0.14, fy=h*0.36, fw=w*0.72, fh=h*0.26;
+    c.fillStyle="#f1e9d2"; c.fillRect(fx,fy,fw,fh);
+    c.fillStyle="#2f5c38"; c.fillRect(fx,fy,fw,fh*0.3);
+    c.fillStyle="#e8b94a";
+    for(let i=0;i<Math.floor(fw/14);i++){ c.fillRect(fx+4+i*14, fy+fh*0.36, 6, 4); }
+    c.fillStyle="#b5482f";
+    for(let i=0;i<4;i++){ c.fillRect(fx+8+i*(fw/4), fy+fh*0.55, fw/4-10, fh*0.32); }
+    // tiny band silhouette on the bow
+    c.fillStyle="#1a1a1a";
+    c.fillRect(fx-6, fy-12, 4, 14);
+    c.fillRect(fx+2, fy-16, 4, 18);
+    c.fillRect(fx+10, fy-10, 4, 12);
+  } else if(key==="legionhall"){
+    c.fillStyle="#3a2a20"; c.fillRect(0,0,w,h);
+    c.fillStyle="#4a352a"; c.fillRect(0,0,w,h*0.7);
+    // stage riser
+    c.fillStyle="#26201a"; c.fillRect(w*0.15,h*0.55,w*0.7,h*0.15);
+    // mic stand
+    c.strokeStyle="#c9c2ac"; c.lineWidth=2;
+    c.beginPath(); c.moveTo(w*0.5,h*0.36); c.lineTo(w*0.5,h*0.55); c.stroke();
+    c.fillStyle="#1a1a1a"; c.fillRect(w*0.5-4,h*0.32,8,6);
+    // string lights
+    c.strokeStyle="rgba(255,255,255,.25)"; c.beginPath(); c.moveTo(0,h*0.12); c.quadraticCurveTo(w*0.5,h*0.24,w,h*0.12); c.stroke();
+    for(let i=0;i<9;i++){
+      const lx = (w/8)*i, ly = h*0.12 + Math.sin(i/8*Math.PI)*h*0.12;
+      c.fillStyle = i%2===0 ? "#e8b94a" : "#b5482f";
+      c.beginPath(); c.arc(lx,ly,2.5,0,7); c.fill();
+    }
+    // folding chairs (rows of little rects)
+    c.fillStyle="#7a6a52";
+    for(let row=0; row<2; row++){
+      for(let i=0;i<6;i++){ c.fillRect(w*0.1+i*(w*0.14), h*0.78+row*10, 8, 8); }
+    }
+  } else if(key==="gorge"){
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#3a2a5a");
+    grad.addColorStop(0.5,"#c9683f");
+    grad.addColorStop(1,"#f0b060");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // canyon cliffs
+    c.fillStyle="#7a3f2a";
+    c.beginPath(); c.moveTo(0,h*0.55); c.lineTo(w*0.22,h*0.28); c.lineTo(w*0.4,h*0.55); c.closePath(); c.fill();
+    c.fillStyle="#5c2e1e";
+    c.beginPath(); c.moveTo(w*0.6,h*0.55); c.lineTo(w*0.82,h*0.22); c.lineTo(w,h*0.55); c.closePath(); c.fill();
+    // stage + lights at the base
+    c.fillStyle="#1a1a1a"; c.fillRect(w*0.32,h*0.66,w*0.36,h*0.14);
+    c.fillStyle="#e8b94a";
+    for(let i=0;i<5;i++){ c.fillRect(w*0.34+i*(w*0.065), h*0.62, 4, 6); }
+    // crowd silhouette
+    c.fillStyle="#1a1414";
+    for(let i=0;i<24;i++){
+      const cx2 = (w/24)*i + (Math.sin(i)*3), cy2 = h*0.86 + Math.cos(i*3)*3;
+      c.beginPath(); c.arc(cx2,cy2,2.5,0,7); c.fill();
+    }
+  } else if(key==="showbox"){
+    c.fillStyle="#0f1420"; c.fillRect(0,0,w,h);
+    // city silhouette
+    c.fillStyle="#1c2433";
+    for(let i=0;i<7;i++){
+      const bw=w/7, bh=h*(0.25+((i*37)%5)*0.06);
+      c.fillRect(i*bw, h*0.55-bh, bw-3, bh);
+    }
+    // marquee
+    c.fillStyle="#c1553b"; c.fillRect(w*0.18,h*0.42,w*0.64,h*0.22);
+    c.fillStyle="#1a1414"; c.fillRect(w*0.22,h*0.47,w*0.56,h*0.12);
+    c.fillStyle="#e8b94a"; c.font="10px monospace"; c.textAlign="center";
+    c.fillText("SHOWBOX", w*0.5, h*0.555);
+    c.fillStyle="#e8b94a";
+    for(let i=0;i<10;i++){ c.beginPath(); c.arc(w*0.2+i*(w*0.064), h*0.43, 1.6, 0, 7); c.fill(); }
+    // street + tiny crowd
+    c.fillStyle="#1a1a1a"; c.fillRect(0,h*0.82,w,h*0.18);
+    for(let i=0;i<10;i++){ c.fillRect(w*0.1+i*(w*0.08), h*0.78, 3, 8); }
+  } else if(key==="papier"){
+    const grad = c.createLinearGradient(0,0,0,h*0.6);
+    grad.addColorStop(0,"#9ecbe0");
+    grad.addColorStop(1,"#d8ecf2");
+    c.fillStyle = grad; c.fillRect(0,0,w,h*0.6);
+    // Olympic mountains, hazy
+    c.fillStyle="rgba(120,140,160,.5)";
+    c.beginPath(); c.moveTo(0,h*0.42); c.lineTo(w*0.25,h*0.24); c.lineTo(w*0.5,h*0.4); c.lineTo(w*0.75,h*0.2); c.lineTo(w,h*0.4); c.lineTo(w,h*0.6); c.lineTo(0,h*0.6); c.closePath(); c.fill();
+    // water
+    c.fillStyle="#2a6b8a"; c.fillRect(0,h*0.6,w,h*0.4);
+    c.strokeStyle="rgba(255,255,255,.25)"; c.lineWidth=1;
+    for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(0,h*0.68+i*10); c.lineTo(w,h*0.68+i*10+3); c.stroke(); }
+    // a couple boats
+    c.fillStyle="#e9e4d6"; c.fillRect(w*0.12,h*0.62,18,6); c.fillRect(w*0.62,h*0.58,22,7);
+    // pier planks running toward viewer
+    c.fillStyle="#8a6a4a";
+    c.beginPath(); c.moveTo(w*0.38,h*0.63); c.lineTo(w*0.62,h*0.63); c.lineTo(w*0.78,h); c.lineTo(w*0.22,h); c.closePath(); c.fill();
+    c.strokeStyle="rgba(0,0,0,.2)";
+    for(let i=1;i<6;i++){
+      const t=i/6, yy=h*0.63+(h-h*0.63)*t, xx1=w*0.38-(w*0.16)*t, xx2=w*0.62+(w*0.16)*t;
+      c.beginPath(); c.moveTo(xx1,yy); c.lineTo(xx2,yy); c.stroke();
+    }
+    // railing posts
+    c.fillStyle="#5c4632";
+    for(let i=0;i<5;i++){ c.fillRect(w*0.25+i*(w*0.12), h*0.7, 3, 18); }
+  } else if(key==="graduation"){
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#e8a568"); grad.addColorStop(1,"#c9683f");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // the peninsula, receding into the distance
+    c.fillStyle="rgba(90,60,50,.5)";
+    c.beginPath(); c.moveTo(0,h*0.5); c.lineTo(w*0.3,h*0.32); c.lineTo(w*0.55,h*0.48); c.lineTo(w*0.8,h*0.3); c.lineTo(w,h*0.46); c.lineTo(w,h*0.55); c.lineTo(0,h*0.55); c.closePath(); c.fill();
+    // water
+    c.fillStyle="#2a6b8a"; c.fillRect(0,h*0.55,w,h*0.3);
+    c.strokeStyle="rgba(255,255,255,.2)"; c.lineWidth=1;
+    for(let i=0;i<2;i++){ c.beginPath(); c.moveTo(0,h*0.62+i*10); c.lineTo(w,h*0.62+i*10+3); c.stroke(); }
+    // ferry deck with the car, foreground
+    c.fillStyle="#c9c2ac"; c.fillRect(0,h*0.78,w,h*0.22);
+    c.fillStyle="#cf3f3f"; c.fillRect(w*0.36,h*0.68,w*0.26,h*0.14);
+    c.fillStyle="#8f2626"; c.fillRect(w*0.39,h*0.61,w*0.2,h*0.09);
+    c.fillStyle="#222"; c.beginPath(); c.arc(w*0.4,h*0.83,4,0,7); c.arc(w*0.58,h*0.83,4,0,7); c.fill();
+    // a mortarboard cap, mid-toss
+    c.fillStyle="#1a1a1a";
+    c.fillRect(w*0.74,h*0.16,14,3);
+    c.fillRect(w*0.79,h*0.19,4,7);
+    c.strokeStyle="#e8b94a"; c.lineWidth=1;
+    c.beginPath(); c.moveTo(w*0.81,h*0.19); c.lineTo(w*0.81,h*0.28); c.stroke();
+  } else if(key==="kineticrace"){
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#a8c8d8"); grad.addColorStop(1,"#8a9a6a");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // mud pit
+    c.fillStyle="#5c4630"; c.fillRect(0,h*0.62,w,h*0.38);
+    c.fillStyle="rgba(255,255,255,.15)";
+    for(let i=0;i<4;i++){ c.beginPath(); c.arc(w*0.2+i*w*0.2, h*0.7+((i%2)*10), 8, 0, 7); c.fill(); }
+    // the contraption, mid-sink
+    c.fillStyle="#8a6a4a"; c.fillRect(w*0.28,h*0.55,w*0.32,h*0.1);
+    c.strokeStyle="#2a2a2a"; c.lineWidth=3;
+    c.beginPath(); c.arc(w*0.32,h*0.7,10,0,7); c.arc(w*0.58,h*0.7,10,0,7); c.stroke();
+    c.fillStyle="#c1553b";
+    c.beginPath(); c.moveTo(w*0.42,h*0.55); c.lineTo(w*0.42,h*0.28); c.lineTo(w*0.56,h*0.42); c.closePath(); c.fill();
+    // tiny cheering crowd on the bank
+    c.fillStyle="#1a1414";
+    for(let i=0;i<8;i++){ c.beginPath(); c.arc(w*0.05+i*(w*0.1), h*0.55, 3, 0, 7); c.fill(); }
+  } else if(key==="poolwonder"){
+    // white plastic patio chairs sinking into a small gated retirement-community pool
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#bfe0d8"); grad.addColorStop(1,"#8fbf7a");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // deck
+    c.fillStyle="#d9cfae"; c.fillRect(0,h*0.62,w,h*0.38);
+    // pool
+    c.fillStyle="#2a8bb0"; c.fillRect(w*0.16,h*0.3,w*0.68,h*0.5);
+    c.strokeStyle="#e8f4f8"; c.lineWidth=1;
+    for(let i=1;i<5;i++){ c.beginPath(); c.moveTo(w*0.18,h*0.3+i*h*0.1); c.lineTo(w*0.82,h*0.3+i*h*0.1); c.stroke(); }
+    c.strokeStyle="#1a5a74"; c.lineWidth=3; c.strokeRect(w*0.16,h*0.3,w*0.68,h*0.5);
+    // chain-link gate suggestion, left
+    c.strokeStyle="rgba(120,130,120,.7)"; c.lineWidth=1;
+    for(let i=0;i<5;i++){ c.beginPath(); c.moveTo(w*0.02,h*0.2+i*8); c.lineTo(w*0.12,h*0.2+i*8); c.stroke(); }
+    // three white patio chairs, mid-sink, at angles
+    const chair=(cx,cy,rot,scale)=>{
+      c.save(); c.translate(cx,cy); c.rotate(rot); c.scale(scale,scale);
+      c.fillStyle="#f4f2ec";
+      c.fillRect(-8,-14,16,3);   // backrest top
+      c.fillRect(-8,-14,3,14);   // back
+      c.fillRect(-8,-2,20,3);    // seat
+      c.fillRect(9,-2,3,12);     // front leg
+      c.fillRect(-8,0,3,10);     // back leg
+      c.restore();
+    };
+    chair(w*0.34,h*0.44,0.5,1.0);
+    chair(w*0.55,h*0.55,-0.35,0.85);
+    chair(w*0.66,h*0.4,0.9,0.7);
+    // ripples
+    c.strokeStyle="rgba(255,255,255,.5)"; c.lineWidth=1;
+    [[w*0.34,h*0.44],[w*0.55,h*0.55],[w*0.66,h*0.4]].forEach(([rx,ry])=>{
+      c.beginPath(); c.ellipse(rx,ry,10,3,0,0,7); c.stroke();
+    });
+  } else if(key==="trebuchet"){
+    // Ryan's compressed-gas rig firing a frozen chicken over the PA waterfront
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#9ecbe0"); grad.addColorStop(0.6,"#cfe1e8"); grad.addColorStop(1,"#7a8a6a");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // water strip
+    c.fillStyle="#2a6b8a"; c.fillRect(0,h*0.5,w,h*0.16);
+    // gravel lot
+    c.fillStyle="#6a6258"; c.fillRect(0,h*0.66,w,h*0.34);
+    // the truck (blue), left
+    c.fillStyle="#2f5f8a"; c.fillRect(w*0.05,h*0.6,w*0.22,h*0.14);
+    c.fillStyle="#1e3f5c"; c.fillRect(w*0.07,h*0.52,w*0.1,h*0.1);
+    c.fillStyle="#222"; c.beginPath(); c.arc(w*0.1,h*0.75,5,0,7); c.arc(w*0.22,h*0.75,5,0,7); c.fill();
+    // the rig: A-frame + throwing arm mid-release
+    c.strokeStyle="#4a3f2a"; c.lineWidth=4;
+    c.beginPath(); c.moveTo(w*0.42,h*0.72); c.lineTo(w*0.5,h*0.4); c.lineTo(w*0.58,h*0.72); c.stroke();
+    c.strokeStyle="#7a5a3a"; c.lineWidth=3;
+    c.beginPath(); c.moveTo(w*0.5,h*0.4); c.lineTo(w*0.72,h*0.22); c.stroke(); // arm
+    // counterweight
+    c.fillStyle="#3a3a3a"; c.fillRect(w*0.46,h*0.44,10,10);
+    // the frozen chicken, airborne, with motion lines
+    c.fillStyle="#f0e6d2"; c.beginPath(); c.ellipse(w*0.82,h*0.16,7,5,0.3,0,7); c.fill();
+    c.strokeStyle="rgba(255,255,255,.7)"; c.lineWidth=2;
+    c.beginPath(); c.moveTo(w*0.7,h*0.22); c.lineTo(w*0.78,h*0.18); c.stroke();
+    c.beginPath(); c.moveTo(w*0.68,h*0.28); c.lineTo(w*0.76,h*0.23); c.stroke();
+    // THOOMP puff at the base
+    c.fillStyle="rgba(255,255,255,.6)";
+    for(let i=0;i<4;i++){ c.beginPath(); c.arc(w*0.5+i*6-8,h*0.7,5-i,0,7); c.fill(); }
+  }
+}
+function drawChickens(x,y){
+  ctx.fillStyle="#e8e3d2"; ctx.beginPath(); ctx.ellipse(x+14,y+20,7,5,0,0,7); ctx.fill();
+  ctx.fillStyle="#c9843b"; ctx.beginPath(); ctx.moveTo(x+20,y+19); ctx.lineTo(x+25,y+20); ctx.lineTo(x+20,y+22); ctx.fill();
+  ctx.fillStyle="#d9432f"; ctx.beginPath(); ctx.ellipse(x+13,y+15,3,3,0,0,7); ctx.fill();
+}
+function drawTarget(x,y){
+  ctx.strokeStyle="#cf3f3f"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x+16,y+16,10,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x+16,y+16,5,0,7); ctx.stroke();
+  ctx.fillStyle="#cf3f3f"; ctx.beginPath(); ctx.arc(x+16,y+16,2,0,7); ctx.fill();
+}
+function drawTent(x,y){
+  ctx.fillStyle="#4a7a5a";
+  ctx.beginPath(); ctx.moveTo(x+6,y+26); ctx.lineTo(x+16,y+8); ctx.lineTo(x+26,y+26); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="#2a4a34"; ctx.stroke();
+}
+function drawPool(x,y){
+  ctx.fillStyle="#2a8bb0"; ctx.fillRect(x+4,y+6,TILE-8,TILE-12);
+  ctx.strokeStyle="#e8f4f8"; ctx.lineWidth=1;
+  for(let i=10;i<TILE-6;i+=7){ ctx.beginPath(); ctx.moveTo(x+6,y+i); ctx.lineTo(x+TILE-6,y+i); ctx.stroke(); }
+  ctx.strokeStyle="#1a5a74"; ctx.lineWidth=2; ctx.strokeRect(x+4,y+6,TILE-8,TILE-12);
+}
+function drawBall(x,y){
+  ctx.fillStyle="rgba(0,0,0,.15)"; ctx.beginPath(); ctx.ellipse(x+TILE/2,y+TILE/2+7,7,3,0,0,7); ctx.fill();
+  ctx.fillStyle="#f1e9d2"; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,7,0,7); ctx.fill();
+  ctx.strokeStyle="#1a1a1a"; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,7,0,7); ctx.stroke();
+  ctx.strokeStyle="#b5482f"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(x+TILE/2-2,y+TILE/2-1,3,0.2,2.6); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x+TILE/2+2,y+TILE/2+1,3,3.4,5.9); ctx.stroke();
+}
+function drawLavender(x,y){
+  ctx.fillStyle="#6a8a52"; ctx.fillRect(x,y,TILE,TILE);
+  ctx.fillStyle="#7a4fa8";
+  for(let row=0; row<4; row++){
+    for(let i=0;i<4;i++){
+      ctx.fillRect(x+2+i*7, y+3+row*7, 4, 5);
+    }
+  }
+  ctx.fillStyle="#4a6a3a";
+  for(let row=0; row<4; row++){
+    for(let i=0;i<4;i++){
+      ctx.fillRect(x+2+i*7, y+7+row*7, 1, 3);
+    }
+  }
+}
+function drawMillSite(x,y){
+  ctx.fillStyle="#5c5a52"; ctx.fillRect(x,y,TILE,TILE);
+  ctx.fillStyle="#3a382e"; ctx.fillRect(x+4,y+8,TILE-8,TILE-14);
+  ctx.strokeStyle="#7a5a3a"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x+6,y+8); ctx.lineTo(x+6,y+2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+TILE-6,y+8); ctx.lineTo(x+TILE-6,y+2); ctx.stroke();
+  ctx.fillStyle="#8a6a34";
+  ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE-8,6,3.4,6.0); ctx.fill();
+  ctx.fillStyle="rgba(0,0,0,.3)";
+  for(let i=0;i<3;i++){ ctx.fillRect(x+7+i*6,y+12,3,6); }
+}
+
+function drawCharacter(x,y,pal,facing,moving){
+  const h=26;
+  const cx = x, cy = y;
+  const legOffset = moving ? Math.sin(Date.now()/110)*3 : 0;
+  ctx.fillStyle="rgba(0,0,0,.3)";
+  ctx.beginPath(); ctx.ellipse(cx,cy+h/2+2,10,4,0,0,7); ctx.fill();
+  ctx.fillStyle=pal.pants; ctx.fillRect(cx-8,cy+4+legOffset,7,10); ctx.fillRect(cx+1,cy+4-legOffset,7,10);
+  ctx.fillStyle=pal.shirt; ctx.fillRect(cx-9,cy-8,18,14);
+  ctx.fillStyle=pal.shirt; ctx.fillRect(cx-12,cy-6,4,9); ctx.fillRect(cx+8,cy-6,4,9);
+  ctx.fillStyle=pal.skin; ctx.fillRect(cx-7,cy-20,14,12);
+  ctx.fillStyle=pal.hair; ctx.fillRect(cx-8,cy-22,16,6);
+  if(facing!=="up"){
+    ctx.fillStyle=pal.hair; ctx.fillRect(cx-8,cy-22,4,10);
+    ctx.fillStyle="#1A1A1A"; ctx.fillRect(cx-4,cy-15,2,2); ctx.fillRect(cx+2,cy-15,2,2);
+  }
+  if(pal.accessory==="beret"){
+    ctx.fillStyle="#b5482f";
+    ctx.beginPath(); ctx.ellipse(cx,cy-23,9,5,0,0,7); ctx.fill();
+    ctx.fillRect(cx+6,cy-27,2,3);
+  }
+  if(pal.accessory==="cap"){
+    ctx.fillStyle="#3a6a8a";
+    ctx.beginPath(); ctx.ellipse(cx,cy-24,9,5,0,0,7); ctx.fill();
+    ctx.fillRect(cx+5,cy-27,9,3);
+  }
+}
+
+/* ---------- Rendering ---------- */
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTileBg(c,r,tileAt(c,r));
+  const npcList = NPCS[state.mapKey] || [];
+  npcList.forEach(npc=>{
+    drawCharacter((npc.col+0.5)*TILE, (npc.row+0.5)*TILE, npc.pal, "down", false);
+  });
+  if(state.mapKey==="lostmountain" && state.carly.visible){
+    drawCharacter(state.carly.x, state.carly.y, CARLY_PALETTE, "down", state.carly.moving);
+  }
+  if(state.mapKey==="pawaterfront" && state.ryanNPC.present){
+    drawCharacter(state.ryanNPC.x, state.ryanNPC.y, RYAN_PALETTE, "down", false);
+  }
+  if(state.companion.joined && state.companion.visible){
+    drawCharacter(state.companion.x, state.companion.y, PALETTE[otherCharacter()], "down", state.companion.moving);
+  }
+  drawCharacter(state.px, state.py, PALETTE[state.character], state.facing, state.isMoving);
+  if(state.dragging && state.dragTarget){
+    ctx.strokeStyle="rgba(232,185,74,0.65)"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(state.dragTarget.x, state.dragTarget.y, 9, 0, 7); ctx.stroke();
+  }
+}
+
+/* ---------- Movement / collision ---------- */
+const SPEED = 2.3;
+function solidAt(px,py){
+  const col = Math.floor(px/TILE), row = Math.floor(py/TILE);
+  return SOLID.has(tileAt(col,row));
+}
+function tryMove(dx,dy){
+  const hw=8, hh=11;
+  if(dx!==0){
+    const nx = state.px+dx;
+    if(!solidAt(nx-hw, state.py+hh-2) && !solidAt(nx+hw, state.py+hh-2) &&
+       !solidAt(nx-hw, state.py-4) && !solidAt(nx+hw, state.py-4)){
+      state.px = Math.max(TILE*0.5, Math.min(TILE*(COLS-0.5), nx));
+    }
+  }
+  if(dy!==0){
+    const ny = state.py+dy;
+    if(!solidAt(state.px-hw, ny+hh-2) && !solidAt(state.px+hw, ny+hh-2) &&
+       !solidAt(state.px-hw, ny-4) && !solidAt(state.px+hw, ny-4)){
+      state.py = Math.max(TILE*0.5, Math.min(TILE*(ROWS-0.5), ny));
+    }
+  }
+}
+
+function update(){
+  if(state.paused) return;
+  let dx=0,dy=0;
+  const keyHeld = state.keys.up||state.keys.down||state.keys.left||state.keys.right;
+  if(keyHeld){
+    if(state.keys.up){dy=-SPEED; state.facing="up";}
+    if(state.keys.down){dy=SPEED; state.facing="down";}
+    if(state.keys.left){dx=-SPEED; state.facing="left";}
+    if(state.keys.right){dx=SPEED; state.facing="right";}
+  } else if(state.dragging && state.dragTarget){
+    const tx = state.dragTarget.x - state.px, ty = state.dragTarget.y - state.py;
+    const dist = Math.hypot(tx,ty);
+    if(dist > 5){
+      dx = (tx/dist)*SPEED; dy = (ty/dist)*SPEED;
+      state.facing = Math.abs(tx)>Math.abs(ty) ? (tx>0?"right":"left") : (ty>0?"down":"up");
+    }
+  }
+  state.isMoving = !!(dx||dy);
+  if(dx||dy) tryMove(dx,dy);
+
+  state.trailTimer++;
+  if(state.trailTimer % 4 === 0){
+    state.companion.history.push({x:state.px,y:state.py});
+    if(state.companion.history.length>12) state.companion.history.shift();
+  }
+  if(state.companion.joined){
+    const target = state.companion.history[0] || {x:state.companion.x,y:state.companion.y};
+    const prevX = state.companion.x, prevY = state.companion.y;
+    state.companion.x += (target.x-state.companion.x)*0.15;
+    state.companion.y += (target.y-state.companion.y)*0.15;
+    state.companion.moving = Math.hypot(state.companion.x-prevX, state.companion.y-prevY) > 0.12;
+  }
+
+  if(state.mapKey==="lostmountain" && !state.carly.away){
+    if(!state.carly.appeared && Date.now()>state.carly.arriveTime){
+      state.carly.appeared = true;
+      state.carly.x = state.px-30; state.carly.y = state.py;
+      state.carly.history = [];
+      state.flags.carlyDiscovered = true;
+    }
+    if(state.carly.appeared){
+      state.carlyTrailTimer = (state.carlyTrailTimer||0)+1;
+      if(state.carlyTrailTimer % 5 === 0){
+        state.carly.history.push({x:state.px,y:state.py});
+        if(state.carly.history.length>14) state.carly.history.shift();
+      }
+      const ctarget = state.carly.history[0] || {x:state.carly.x,y:state.carly.y};
+      const cPrevX = state.carly.x, cPrevY = state.carly.y;
+      state.carly.x += (ctarget.x-state.carly.x)*0.1;
+      state.carly.y += (ctarget.y-state.carly.y)*0.1;
+      state.carly.moving = Math.hypot(state.carly.x-cPrevX, state.carly.y-cPrevY) > 0.1;
+    }
+    state.carly.visible = state.carly.appeared;
+  } else {
+    state.carly.visible = false;
+  }
+
+  if(state.mapKey==="pawaterfront" && state.ryanNPC.present){
+    state.ryanNPC.wanderTimer++;
+    if(state.ryanNPC.wanderTimer > 130){
+      state.ryanNPC.wanderTimer = 0;
+      for(let tries=0; tries<10; tries++){
+        const tc = 2+Math.floor(Math.random()*12), tr = 2+Math.floor(Math.random()*8);
+        if(!SOLID.has(tileAt(tc,tr))){
+          state.ryanNPC.targetX = (tc+0.5)*TILE; state.ryanNPC.targetY = (tr+0.5)*TILE;
+          break;
+        }
+      }
+    }
+    state.ryanNPC.x += (state.ryanNPC.targetX-state.ryanNPC.x)*0.02;
+    state.ryanNPC.y += (state.ryanNPC.targetY-state.ryanNPC.y)*0.02;
+  }
+
+  const col = Math.floor(state.px/TILE), row = Math.floor(state.py/TILE);
+  const key = col+","+row;
+  const ch = tileAt(col,row);
+
+  const onOwnHome = (ch==="H" && state.character==="jesse") || (ch==="L" && state.character==="lucas");
+  state.companion.visible = state.companion.joined && !onOwnHome;
+
+  const npcHere = (NPCS[state.mapKey]||[]).find(n=>n.col===col && n.row===row);
+  const isZone = ZONE_CHARS.has(ch);
+  const activeKey = npcHere ? ("npc:"+npcHere.id) : (isZone ? ("zone:"+ch) : key);
+  const isPlainGround = !npcHere && !INTERACTIVE.has(ch);
+  const wasInZone = typeof state.lastTileKey === "string" && state.lastTileKey.indexOf("zone:")===0;
+  const freeze = isPlainGround && wasInZone;
+
+  if(ch==="q"){
+    setTile(col,row,".");
+    gainQuarters(1);
+    floatText("+1", state.px, state.py-30);
+    refreshHud();
+  } else if(!freeze && activeKey!==state.lastTileKey){
+    if(npcHere) interactNpc(npcHere);
+    else handleSpecial(ch,col,row);
+  }
+  if(!freeze) state.lastTileKey = activeKey;
+
+  if(state.mapKey==="sequim" && Date.now()>state.flags.momPopCooldown && Math.random()<0.0006){
+    triggerMomPopIn();
+  }
+  if(state.mapKey==="lostmountain" && Date.now()>state.flags.carlyBallCooldown && Math.random()<0.0005){
+    triggerCarlyBallHit();
+  }
+  if(state.mapKey==="campus" && (state.flags.anina||0)>=1 && (state.character==="lucas" || state.companion.joined)
+     && Date.now()>state.flags.ninaChaseCooldown && Math.random()<0.0006){
+    triggerNinaChase();
+  }
+  if(isKingOfAny() && Date.now()>(state.flags.aggroCooldown||0) && Math.random()<0.0004){
+    triggerCivAggro();
+  }
+}
+
+/* ---------- Interactions ---------- */
+function floatText(txt,x,y){
+  const layer = document.getElementById("popupLayer");
+  const el = document.createElement("div");
+  el.className="floatText";
+  el.textContent = txt;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width/canvas.width, scaleY = rect.height/canvas.height;
+  el.style.left = (x*scaleX-10)+"px";
+  el.style.top = (y*scaleY)+"px";
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(),1100);
+}
+
+function locName(ch){
+  return {H:"Home",L:"Lucas' House",T:"Taco Bell",G:"Gas Station",D:"Downtown",
+    V:"Your Car",K:"Ryan's Truck",X:"Campus Lawn",C:"Campus Building",
+    Z:"Waterfront Pizza",R:"Quimper Sound",W:"The Pier",F:"Ferry Dock",
+    a:"Rose Theater", b:"Silverwater Cafe", c:"Sirens Pub", e:"Chetzemoka Park", g:"Legion Hall",
+    h:"Hurricane Coffee", i:"Grocery Store", j:"Dairy Queen", k:"Taco Time", m:"Classroom",
+    n:"The Chickens", o:"Shooting Range", p:"Campsite", u:"The Pool", y:"A Softball", z:"Purple Haze Lavender",
+    w:"Round the Clock Deli", x:"The Old Rainier Mill Site",
+    B:"Port Book & News", S:"The Shoe Store", O:"Downtown PA", E:"The Waterfront Trail",
+    P:"The Waterfront", Y:"Coho Ferry Dock"
+  }[ch] || mapDef().label;
+}
+document.getElementById("locLabel").textContent = mapDef().label;
+
+function handleSpecial(ch,col,row){
+  if(ch==="."||ch==="#"||ch==="~"){ document.getElementById("locLabel").textContent = mapDef().label; return; }
+  document.getElementById("locLabel").textContent = locName(ch);
+
+  switch(ch){
+    case "H": openHome(); break;
+    case "L": openLucasHouse(); break;
+    case "T": openTacoBell(); break;
+    case "G": openGasStation(); break;
+    case "D": openDowntown(); break;
+    case "V": openTravel(); break;
+    case "K": openRyan(); break;
+    case "X": openHackySack(); break;
+    case "Z": openPizza(); break;
+    case "R": openRecordStore(); break;
+    case "W": openPier(); break;
+    case "F": openFerry(); break;
+    case "a": openRoseTheater(); break;
+    case "b": openSilverwater(); break;
+    case "c": openSirens(); break;
+    case "e": openChetzemoka(); break;
+    case "g": openLegionHall(); break;
+    case "h": openHurricaneCoffee(); break;
+    case "i": openGrocery(); break;
+    case "j": openDairyQueen(); break;
+    case "k": openTacoTime(); break;
+    case "m": openClassroom(); break;
+    case "n": openChickens(); break;
+    case "o": openShootingRange(); break;
+    case "p": openCampingSpot(); break;
+    case "u": openPool(); break;
+    case "y": carlyTalk(); break;
+    case "z": openLavender(); break;
+    case "w": openDeli(); break;
+    case "x": openMillSite(); break;
+    case "B": openBookseller(); break;
+    case "S": openShoeStore(); break;
+    case "O": openCafes(); break;
+    case "E": openWaterfrontTrail(); break;
+    case "P": openWaterfrontPier(); break;
+    case "Y": openCohoDock(); break;
+  }
+  recordCivVisit(state.mapKey, ch);
+}
+
+function interactNpc(npc){
+  document.getElementById("locLabel").textContent = npc.name;
+  const stage = state.flags[npc.stageFlag] || 0;
+  const d = NPC_DIALOGUE[npc.id];
+  const stages = npc.stages || 3;
+
+  if(stage===0){
+    state.flags[npc.stageFlag] = 1;
+    showModal(npc.name.toUpperCase(), pick(d.first), [{text:"...",cls:"gold"}]);
+    return;
+  }
+  if(stages===4){
+    if(stage===1){
+      state.flags[npc.stageFlag] = 2;
+      gainQuarters(2);
+      refreshHud();
+      showModal(npc.name.toUpperCase(), pick(d.crush), [{text:"...",cls:"gold"}]);
+    } else if(stage===2){
+      state.flags[npc.stageFlag] = 3;
+      gainQuarters(4);
+      if(npc.id==="anina") state.flags.lakeCrescentVisited = true;
+      refreshHud();
+      playFanfare();
+      showModal(npc.name.toUpperCase(), pick(d.resolution), [{text:"Wow",cls:"gold"}]);
+    } else {
+      showModal(npc.name.toUpperCase(), pick(d.repeat), [{text:"Okay",cls:"gold"}]);
+    }
+  } else {
+    if(stage===1){
+      state.flags[npc.stageFlag] = 2;
+      const reward = npc.reward || 2;
+      gainQuarters(reward);
+      refreshHud();
+      showModal(npc.name.toUpperCase(), d.date, [{text:"Nice",cls:"gold"}]);
+    } else {
+      const line = d.repeat[Math.floor(Math.random()*d.repeat.length)];
+      showModal(npc.name.toUpperCase(), line, [{text:"Okay",cls:"gold"}]);
+    }
+  }
+}
+
+function triggerCarlyBallHit(){
+  state.flags.carlyBallCooldown = Date.now() + 150000;
+  state.gas = Math.max(0, state.gas-4);
+  refreshHud();
+  showModal("THWACK","Carly's fastpitch team is running drills in the field again. A line drive catches your car dead in the door panel. Nobody apologizes. Carly, unbothered, from the mound: \"That's a strike, by the way.\"<br><br><span class='small'>-4 gas — cosmetic damage, mostly</span>",[{text:"Incredible",cls:"gold"}]);
+}
+function triggerNinaChase(){
+  state.flags.ninaChaseCooldown = Date.now() + 150000;
+  state.flags.ninaChaseSeen = true;
+  const playingLucas = state.character==="lucas";
+  let body;
+  if(playingLucas){
+    body = "Nina's Buick — that boat of a LeSabre — coughs to life across the lot and starts rolling before she's even got the door shut. Some part of your brain that is not the smart part takes over. You're out of the car and running after it on foot, across the whole parking lot, yelling \"wait — <i>wait</i>—\" at a vehicle that is very much not going to wait. She does not see you. Or she sees you and elects, generously, to pretend she didn't. You slow to a walk about the time the taillights hit the road. Great talk.";
+  } else {
+    body = "Nina's Buick — that boat of a LeSabre — coughs to life across the lot and starts rolling. Beside you, Lucas just <i>goes</i> — out of the car, running after it on foot, yelling \"wait — <i>wait</i>—\" across the entire parking lot at a vehicle that is very much not going to wait. You do not follow. There's no version of following that helps. You watch him slow to a walk about the time the taillights hit the road, then wander back like nothing happened. Neither of you brings it up.";
+  }
+  showModal("NINA'S LESABRE", body, [{text:playingLucas?"...worth it":"Poor guy",cls:"gold"}]);
+}
+function triggerMomPopIn(){
+  state.flags.momPopCooldown = Date.now() + 180000;
+  if(Math.random()<0.4){
+    state.flags.dianeErrand = true;
+    state.gas = Math.min(state.maxGas, state.gas+35);
+    gainQuarters(2);
+    refreshHud();
+    showModal("DIANE","Diane flags you down. \"Can you two run up to Port Townsend for me? Gas is on me — grab lunch too.\" She hands over more than you need.<br><br><span class='small'>+35 gas, +2 quarters</span>",[{text:"On it",cls:"gold"}]);
+  } else {
+    state.gas = Math.min(state.maxGas, state.gas+20);
+    gainQuarters(4);
+    refreshHud();
+    showModal("LUCAS' MOM","A car pulls up alongside you — it's Diane. \"You kids need gas money? And get a decent lunch, too.\" She presses some quarters into your hand before driving off.<br><br><span class='small'>+20 gas, +4 quarters</span>",[{text:"Thanks!",cls:"gold"}]);
+  }
+}
+
+document.getElementById("civBadge").addEventListener("click", ()=>{
+  openMemoryBook();
+  const t = document.querySelector('.memTabBtn[data-tab="civ"]');
+  if(t) t.click();
+});
+document.getElementById("soundBtn").addEventListener("click", ()=>{
+  musicEnabled = !musicEnabled; sfxEnabled = musicEnabled;
+  document.getElementById("soundBtn").textContent = musicEnabled ? "🔊 Sound" : "🔇 Sound";
+});
+
+function updateSidekickButtons(){
+  document.getElementById("ryanBtn").classList.toggle("hidden", !(state.mapKey==="pawaterfront" && state.ryanNPC.present));
+}
+function enterLostMountain(){
+  const wasAway = !!state.flags.carlyWasAway;
+  const away = Math.random() < 0.2;
+  state.carly.away = away;
+  state.carly.appeared = false;
+  state.carly.justReturned = (!away && wasAway);
+  state.carly.arriveTime = Date.now() + 3000 + Math.random()*2000;
+  state.flags.carlyWasAway = away;
+}
+document.getElementById("dreamBtn").addEventListener("click", openDreamOverlay);
+
+const TELEPORT_LOCATIONS = [
+  {label:"Lost Mountain", action:()=>teleportTo("lostmountain")},
+  {label:"Sequim", action:()=>teleportTo("sequim")},
+  {label:"Peninsula College", action:()=>teleportTo("campus")},
+  {label:"Port Townsend", action:()=>teleportTo("porttownsend")},
+  {label:"PA Waterfront", action:()=>teleportTo("pawaterfront")}
+];
+function dreamShow(type){
+  closeDreamOverlay();
+  if(type==="legion"){
+    switchMusic(CONCERT_MELODY,"square",0.07);
+    const buddy = charName(otherCharacter());
+    const opener = pick(OPENER_BANTER.legionhall).replace("{buddy}", buddy);
+    state.concert.legionVisits = (state.concert.legionVisits||0)+1;
+    showModal("AMERICAN LEGION HALL", opener, [{text:"Hell yeah",cls:"gold",onClick:()=>switchMusic(MELODY,"triangle",0.05)}], "legionhall");
+  } else {
+    attendBigShow(type, true);
+  }
+}
+function dreamFindLauren(){
+  closeDreamOverlay();
+  state.flags.laurenDream = true;
+  showModal("A DREAM, AGAIN","This time it's not fuzzy at all. You know exactly who she is, somehow, even though you haven't met her yet. She's laughing at something you haven't said yet. You'd know that laugh anywhere, which makes no sense, because you don't know it yet.<br><br><span class='small'>(Her name's Lauren. You'll get there.)</span>",[{text:"Worth the wait",cls:"gold"}]);
+}
+function getDreamSpecials(){
+  const specials = [
+    {label:"Fort Worden", action:()=>{ closeDreamOverlay(); playScene("fortworden",0); }},
+    {label:"Lake Crescent", action:()=>{ closeDreamOverlay(); playScene("lakecrescent",0); }},
+    {label:"Hacky Sack", action:()=>{ closeDreamOverlay(); state.flags.hackySackCooldown=0; openHackySack(); }},
+    {label:"Ferry Captain", action:()=>{ closeDreamOverlay(); openFerryGame(); }},
+    {label:"Count the Seagulls", action:()=>{ closeDreamOverlay(); openSeagullCount(); }},
+    {label:"Legion Hall", action:()=>dreamShow("legion")},
+    {label:"Seattle Show", action:()=>dreamShow("seattle")},
+    {label:"The Gorge", action:()=>dreamShow("gorge")},
+    {label:"+20 Quarters", action:()=>{ gainQuarters(20); floatText("+20!", state.px, state.py-30); }},
+    {label:"Full Tank", action:()=>{ state.gas=state.maxGas; refreshHud(); floatText("full tank", state.px, state.py-30); }}
+  ];
+  if(state.character==="jesse"){
+    specials.push({label:"Find Lauren", action:dreamFindLauren});
+  }
+  return specials;
+}
+function teleportTo(mapKey){
+  closeDreamOverlay();
+  state.mapKey = mapKey;
+  const sp = ENTRY_SPAWN[mapKey] || {x:8,y:6};
+  state.px = sp.x*TILE; state.py = sp.y*TILE;
+  state.lastTileKey = null;
+  if(state.companion.joined){ state.companion.x=state.px; state.companion.y=state.py; state.companion.history=[]; }
+  if(mapKey==="pawaterfront") rollRyanPresence();
+  if(mapKey==="lostmountain"){ enterLostMountain(); }
+  updateSidekickButtons();
+  document.getElementById("locLabel").textContent = mapDef().label;
+  refreshHud();
+}
+function openDreamOverlay(){
+  const fillGrid = (id, spots)=>{
+    const grid = document.getElementById(id);
+    grid.innerHTML = "";
+    spots.forEach(spot=>{
+      const btn = document.createElement("button");
+      btn.className = "btn gold";
+      btn.textContent = spot.label;
+      btn.onclick = spot.action;
+      grid.appendChild(btn);
+    });
+  };
+  fillGrid("dreamGridLocations", TELEPORT_LOCATIONS);
+  fillGrid("dreamGridSpecial", getDreamSpecials());
+  const puff = document.getElementById("smokePuff");
+  puff.classList.remove("hidden","fadeOut");
+  setTimeout(()=>puff.classList.add("fadeOut"), 350);
+  setTimeout(()=>puff.classList.add("hidden"), 750);
+  switchMusic(DREAM_MELODY, "sawtooth", 0.045);
+  state.paused = true;
+  document.getElementById("dreamOverlay").classList.remove("hidden");
+}
+function closeDreamOverlay(){
+  document.getElementById("dreamOverlay").classList.add("hidden");
+  state.paused = false;
+  switchMusic(MELODY, "triangle", 0.05);
+}
+function wakeUp(){
+  closeDreamOverlay();
+  const puff = document.getElementById("smokePuff");
+  puff.classList.remove("hidden","fadeOut");
+  state.mapKey = "sequim";
+  state.px = 10.5*TILE; state.py = 9*TILE;
+  state.lastTileKey = null;
+  if(state.companion.joined){ state.companion.x=state.px; state.companion.y=state.py; state.companion.history=[]; }
+  state.ryanNPC.present = false;
+  updateSidekickButtons();
+  document.getElementById("locLabel").textContent = mapDef().label;
+  refreshHud();
+  setTimeout(()=>puff.classList.add("fadeOut"), 400);
+  setTimeout(()=>puff.classList.add("hidden"), 800);
+}
+document.getElementById("wakeUpBtn").addEventListener("click", wakeUp);
+
+const CARLY_LOOT_LINES = [
+  "Carly's back from regionals, still half in uniform, dragging a duffel bag that smells like a gymnasium and victory. \"We took second,\" she announces, like it's nothing, and drops a fistful of tournament swag in your hands — pins, a team sticker, and actual cash from a betting pool nobody's explaining.<br><br><span class='small'>+8 quarters — tournament loot</span>",
+  "Carly gets back from state with a trophy she immediately hands off to you because her arms are tired. \"Don't drop it,\" she says, already walking away. There's a folded twenty in the bag too, which is apparently yours now, for reasons unspecified.<br><br><span class='small'>+8 quarters — team fundraiser proceeds, allegedly</span>"
+];
+function carlyTalk(){
+  if(state.carly.away){
+    showModal("CARLY","No sign of her. Andy mentioned something about regionals, or maybe it's already nationals — hard to keep track this time of year. The field's just quiet without her.",[{text:"Huh",cls:"gold"}]);
+    return;
+  }
+  if(state.carly.justReturned){
+    state.carly.justReturned = false;
+    gainQuarters(8);
+    showModal("CARLY'S BACK", pick(CARLY_LOOT_LINES), [{text:"Welcome back",cls:"gold"}]);
+    return;
+  }
+  state.flags.carlyBallTouched = true;
+  const lines = [
+    "Carly complains, at length, about something that happened at practice today. You stopped following the plot two minutes ago. She does not notice. She does not need you to.",
+    "A pack of Carly's friends roll through on bikes, and one of them says something about you that makes the rest of them lose it. Carly tells them to knock it off. They do not knock it off.",
+    "Carly insists on 'just a little practice' — underhand, easy. You manage to miss it four times in a row, once spectacularly. She has never laughed that hard at anything in her life.",
+    "Penguin spots Carly a good twenty yards from the coop and launches. She's over the fence before you can even yell a warning. Penguin, for reasons nobody has ever explained, has never once come after you."
+  ];
+  const found = Math.random()<0.25;
+  let extra = "";
+  if(found){ gainQuarters(1); extra = "<br><br><span class='small'>+1 quarter, sitting right next to the ball</span>"; }
+  showModal("CARLY", pick(lines)+extra, [{text:"Okay",cls:"gold"}]);
+}
+function rollRyanPresence(){
+  state.ryanNPC.present = Math.random()<0.45;
+  if(state.ryanNPC.present){
+    let tc=6, tr=5;
+    for(let tries=0; tries<10; tries++){
+      const c = 2+Math.floor(Math.random()*12), r = 2+Math.floor(Math.random()*8);
+      if(!SOLID.has(tileAt(c,r))){ tc=c; tr=r; break; }
+    }
+    state.ryanNPC.x = (tc+0.5)*TILE; state.ryanNPC.y = (tr+0.5)*TILE;
+    state.ryanNPC.targetX = state.ryanNPC.x; state.ryanNPC.targetY = state.ryanNPC.y;
+  }
+  updateSidekickButtons();
+}
+function ryanTalk(){
+  if(!state.ryanNPC.present) return;
+  state.flags.metRyan = true;
+  showModal("RYAN", pick(RYAN_LINES), [{text:"Sure, Ryan",cls:"gold"}]);
+}
+document.getElementById("ryanBtn").addEventListener("click", ryanTalk);
+
+function jobSurpriseCheck(){
+  if(state.jobs.given) return false;
+  if(Math.random() < 0.14){
+    state.jobs.given = true;
+    const pool = [
+      {key:"gas", name:"Gas Station"},
+      {key:"record", name:"Quimper Sound"},
+      {key:"pizza", name:"Waterfront Pizza"}
+    ];
+    const job = pool[Math.floor(Math.random()*pool.length)];
+    const holder = Math.random()<0.5 ? state.character : otherCharacter();
+    state.jobs.holder = holder; state.jobs.place = job.name;
+    const oldPrice = state.prices[job.key];
+    state.prices[job.key] = Math.max(1, Math.round(oldPrice*0.5));
+    showModal("SURPRISE", `${charName(holder)} just got hired at ${job.name}!<br><br><span class='small'>Prices there just dropped to ${state.prices[job.key]}◉, for good.</span>`,
+      [{text:"No way!",cls:"gold"}]);
+    return true;
+  }
+  return false;
+}
+
+/* ---------- Concert opportunity windows ---------- */
+function openConcertWindow(type){
+  state.concert.windowType = type;
+  state.concert.windowTravelsLeft = type==="gorge" ? 4 : 6;
+  state.concert.everOpened = true;
+  refreshHud();
+  const buddy = charName(otherCharacter());
+  if(type==="gorge"){
+    showModal("THE GORGE",`Word's going around — there's a show at the Gorge. ${buddy}'s already vibrating about it. This doesn't come around twice a summer. Get to the ferry with ${GORGE_COST}◉ before the window closes.`,[{text:"No way",cls:"gold"}]);
+  } else {
+    showModal("SEATTLE SHOW",`Someone mentions a show happening in Seattle soon. Worth a look if you can get ${SEATTLE_COST}◉ together for the ferry and a ticket.`,[{text:"Noted",cls:"gold"}]);
+  }
+}
+function concertWindowCheck(){
+  if(state.concert.windowType) return false;
+  if(state.concert.gorgeCooldownTravels>0) state.concert.gorgeCooldownTravels--;
+  const forceEarly = !state.concert.everOpened && state.tripCount>=3;
+  const roll = Math.random();
+  if(state.concert.gorgeCooldownTravels<=0 && roll<0.08){ openConcertWindow("gorge"); return true; }
+  if(roll<0.28 || forceEarly){ openConcertWindow("seattle"); return true; }
+  return false;
+}
+function advanceConcertWindow(){
+  if(!state.concert.windowType) return false;
+  state.concert.windowTravelsLeft--;
+  if(state.concert.windowTravelsLeft<=0){
+    const closedType = state.concert.windowType;
+    state.concert.windowType = null;
+    refreshHud();
+    if(closedType==="gorge"){
+      state.concert.gorgeCooldownTravels = 16;
+      showModal("THE GORGE","The window's closed — the show came and went without you. That one stings a little.",[{text:"...",cls:"gold"}]);
+    } else {
+      showModal("SEATTLE SHOW","That show's come and gone. Another one will turn up eventually.",[{text:"Okay",cls:"gold"}]);
+    }
+    return true;
+  }
+  return false;
+}
+
+function showModal(title,body,buttons,sceneKey){
+  state.paused = true;
+  const sceneCanvas = document.getElementById("modalScene");
+  if(sceneKey){
+    sceneCanvas.classList.remove("hidden");
+    drawSceneImage(sceneCanvas, sceneKey);
+  } else {
+    sceneCanvas.classList.add("hidden");
+  }
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = body;
+  const btnRow = document.getElementById("modalBtns");
+  btnRow.innerHTML = "";
+  buttons.forEach(b=>{
+    const btn = document.createElement("button");
+    btn.className = "btn " + (b.cls||"");
+    btn.textContent = b.text;
+    btn.disabled = !!b.disabled;
+    btn.onclick = ()=>{ closeModal(); if(b.onClick) b.onClick(); };
+    btnRow.appendChild(btn);
+  });
+  document.getElementById("modal").classList.remove("hidden");
+}
+function closeModal(){
+  state.paused = false;
+  document.getElementById("modal").classList.add("hidden");
+}
+
+/* ---------- Tiny chiptune audio engine (no files, all synthesized) ---------- */
+let audioCtx = null;
+let musicEnabled = true;
+let sfxEnabled = true;
+let musicTimer = null;
+let musicStep = 0;
+const MELODY = [
+  {f:261.63, d:0.16}, {f:329.63, d:0.16}, {f:392.00, d:0.16}, {f:523.25, d:0.16},
+  {f:392.00, d:0.16}, {f:329.63, d:0.16}, {f:293.66, d:0.16}, {f:349.23, d:0.16},
+  {f:440.00, d:0.16}, {f:349.23, d:0.16}, {f:293.66, d:0.16}, {f:261.63, d:0.32}
+];
+const CONCERT_MELODY = [
+  {f:196.00,d:0.11},{f:196.00,d:0.11},{f:246.94,d:0.11},{f:196.00,d:0.11},
+  {f:220.00,d:0.11},{f:220.00,d:0.11},{f:277.18,d:0.11},{f:220.00,d:0.11},
+  {f:196.00,d:0.11},{f:246.94,d:0.11},{f:293.66,d:0.11},{f:246.94,d:0.22}
+];
+const DREAM_MELODY = [
+  {f:220.00,d:0.32},{f:207.65,d:0.32},{f:196.00,d:0.32},{f:174.61,d:0.48},
+  {f:220.00,d:0.32},{f:246.94,d:0.32},{f:261.63,d:0.32},{f:220.00,d:0.6}
+];
+function ensureAudio(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC) audioCtx = new AC();
+  }
+  if(audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+function playCoinSound(){
+  if(!sfxEnabled || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(880, t);
+  osc.frequency.setValueAtTime(1318.5, t+0.07);
+  gain.gain.setValueAtTime(0.16, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t+0.22);
+}
+function playFanfare(){
+  if(!sfxEnabled || !audioCtx) return;
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  const t0 = audioCtx.currentTime;
+  notes.forEach((f,i)=>{
+    const t = t0 + i*0.11;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(f, t);
+    gain.gain.setValueAtTime(0.14, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.28);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t+0.28);
+  });
+}
+let currentMelody = MELODY, currentWave = "triangle", currentGain = 0.05;
+function scheduleNote(){
+  clearTimeout(musicTimer);
+  if(!audioCtx){ musicTimer = setTimeout(scheduleNote, 300); return; }
+  const note = currentMelody[musicStep % currentMelody.length];
+  if(musicEnabled){
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = currentWave;
+    osc.frequency.setValueAtTime(note.f, t);
+    gain.gain.setValueAtTime(currentGain, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+note.d*0.9);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t+note.d);
+  }
+  musicStep++;
+  musicTimer = setTimeout(scheduleNote, note.d*1000);
+}
+function switchMusic(melody,wave,gain){
+  currentMelody = melody; currentWave = wave; currentGain = gain; musicStep = 0;
+}
+function startMusic(){
+  if(musicTimer) return;
+  musicStep = 0;
+  scheduleNote();
+}
+function gainQuarters(n){
+  state.quarters += n;
+  state.totalQuartersEver += n;
+  playCoinSound();
+}
+
+function refreshHud(){
+  document.getElementById("quarterCount").textContent = state.quarters;
+  document.getElementById("pizzaCount").textContent = state.pizza;
+  document.getElementById("recordCount").textContent = state.records;
+  document.getElementById("gasBarInner").style.width = Math.max(0,state.gas) + "%";
+  document.getElementById("gasNum").textContent = Math.max(0,Math.round(state.gas));
+  document.getElementById("tripCounter").textContent = "Trip " + state.tripCount;
+  document.getElementById("hint").textContent = getContextualHint();
+
+  const badge = document.getElementById("civBadge");
+  if(badge){
+    if(isKingOfAny()){
+      badge.textContent = "👑 " + CIVILIZATIONS[firstKingCiv()].adjective;
+      badge.classList.add("gold");
+    } else {
+      const dom = dominantCiv();
+      badge.textContent = "🏛️ " + civPct(dom) + "% " + CIVILIZATIONS[dom].adjective;
+      badge.classList.remove("gold");
+    }
+  }
+
+  const banner = document.getElementById("concertBanner");
+  if(state.concert.windowType){
+    const need = state.concert.windowType==="gorge" ? GORGE_COST : SEATTLE_COST;
+    const label = state.concert.windowType==="gorge" ? "Gorge" : "Seattle";
+    const left = state.concert.windowTravelsLeft;
+    banner.textContent = `🎫 ${label} show — ${left} trip${left===1?"":"s"} left · need ${need}◉ (have ${state.quarters}◉) · catch it from any car/travel menu`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+  saveGame();
+}
+function getContextualHint(){
+  if(!state.companion.joined) return "Find Taco Bell in Sequim to meet up and get the summer started.";
+  if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
+  if(state.gas < 15) return "Getting low on gas — look for a gas station.";
+  if(state.quarters < 8) return "Explore glowing spots for quarters and stories.";
+  if(state.records < 2) return "Quimper Sound in Port Townsend has records worth digging for.";
+  return "Keep exploring — dates, shows, and secrets are still out there.";
+}
+
+/* ---- Location handlers: home base ---- */
+const JESSE_FAMILY_LINES = [
+  "Patti's got dinner going and a dozen questions about where you've actually been all day. You answer maybe three of them honestly.",
+  "Patti hands you a Tupperware 'for the road' without being asked. You will eat all of it before you even reach Taco Bell.",
+  "Andy's out messing with the truck again — the same repair he's been 'almost done with' since spring. He gives you a nod and keeps working.",
+  "Andy asks if you've thought about your future. You have not. You both let it go without much fuss."
+];
+function openHome(){
+  if(state.character!=="jesse"){
+    if(Math.random()<0.4){
+      showModal("LOST MOUNTAIN", pick(JESSE_FAMILY_LINES) + " Jesse's not around, but nobody minds you waiting.", [{text:"Okay",cls:"gold"}]);
+    } else {
+      showModal("LOST MOUNTAIN","Jesse's place. Empty right now — he's probably already headed down to Sequim.",[{text:"Okay",cls:"gold"}]);
+    }
+    return;
+  }
+  if(!state.flags.jesseCouchBonus){
+    state.flags.jesseCouchBonus = true;
+    gainQuarters(2);
+    showModal("LOST MOUNTAIN",
+      "Your room. Quiet enough up here to hear yourself think — if you don't mind the drive to anywhere. You dig through the couch cushions and find some quarters.<br><br><span class='small'>+2 quarters</span>",
+      [{text:"Head out",cls:"gold"}]);
+    return;
+  }
+  if(!state.flags.laurenDream && Math.random()<0.15){
+    state.flags.laurenDream = true;
+    showModal("A DREAM","You have one of those dreams that doesn't make any sense until years from now — a kitchen that isn't any kitchen you know, someone laughing at something you just said like it's the best thing anyone's ever said, a feeling like you've already lived this exact moment before. You wake up smiling and can't explain why. Weird dream. You'll think about it again, someday. Not yet, though.<br><br><span class='small'>(Years from now, this will make a lot more sense. Her name's Lauren.)</span>",
+      [{text:"Huh.",cls:"gold"}]);
+    return;
+  }
+  if(Math.random()<0.35){
+    showModal("LOST MOUNTAIN", pick(JESSE_FAMILY_LINES), [{text:"Okay",cls:"gold"}]);
+    return;
+  }
+  showModal("LOST MOUNTAIN","Nothing left in the couch. Time to go find Lucas.",[{text:"Okay",cls:"gold"}]);
+}
+const LUCAS_FAMILY_LINES = [
+  "Rick's home for once, half-asleep in front of the TV. He grunts something that might be a greeting.",
+  "Rick asks if you're 'still doing the music thing.' You're not sure what he means. Neither is he.",
+  "Sam's parked on the couch, unbothered, and immediately starts making fun of Lucas' hair for no reason.",
+  "Sam wants to know if you're 'still hanging around.' He says it like an insult and a compliment at the same time.",
+  "Angela's got headphones on and barely looks up, but she still manages one perfectly-timed eye roll in your direction.",
+  "Angela's drawing something at the kitchen table and won't let anyone see it yet."
+];
+function openLucasHouse(){
+  if(state.character!=="jesse"){
+    showModal("HOME","Five minutes from anywhere that matters. You grab your jacket and head out.",[{text:"Okay",cls:"gold"}]);
+    return;
+  }
+  if(!state.flags.lucasMomBonus){
+    state.flags.lucasMomBonus = true;
+    gainQuarters(5);
+    showModal("LUCAS' HOUSE","Diane presses some quarters into your hand. \"For gas, hon.\"<br><br><span class='small'>+5 quarters</span>",
+      [{text:"Thanks!",cls:"gold"}]);
+    return;
+  }
+  if(Math.random()<0.45){
+    showModal("LUCAS' HOUSE", pick(LUCAS_FAMILY_LINES), [{text:"Okay",cls:"gold"}]);
+  } else {
+    showModal("LUCAS' HOUSE","Lucas is probably already at Taco Bell. Diane waves from the porch.",[{text:"Okay",cls:"gold"}]);
+  }
+}
+function openTacoBell(){
+  if(!state.flags.tacoBellFound){
+    state.flags.tacoBellFound = true;
+    gainQuarters(1);
+    const buddy = charName(otherCharacter());
+    let justJoined = false;
+    if(!state.companion.joined){
+      state.companion.joined = true;
+      state.companion.x = state.px - 26; state.companion.y = state.py;
+      state.companion.history = [];
+      justJoined = true;
+    }
+    const intro = state.character==="lucas"
+      ? "Taco Bell. Your shift technically started ten minutes ago."
+      : `Taco Bell — where ${buddy} works some shifts, and where you meet up whenever you've both got class at Peninsula College. ${buddy} spots you and slides over a free something when the manager's turned around.`;
+    showModal("TACO BELL",`${intro} You find a quarter wedged in the booth seat.<br><br><span class='small'>+1 quarter</span>`,
+      [{text:"Let's go",cls:"gold",onClick:()=>{
+        if(justJoined) showTempHint(`${buddy}'s riding with you now.<br>Watch the 🏛️ <b>badge</b> (bottom-right) — it tracks which tribe you're becoming.<br>📓 <b>Memory Book</b> tracks everything else.`, 5500);
+      }}]);
+    return;
+  }
+
+  let tip = "";
+  if(state.character==="lucas" && Math.random()<0.3){
+    gainQuarters(1);
+    tip = "<br><br><span class='small'>+1 quarter — decent tips today</span>";
+  }
+  const flavor = state.character==="lucas"
+    ? "Another shift. Same fryer smell, same registers."
+    : `${charName(otherCharacter())}'s on shift. You lean on the counter and wait it out.`;
+
+  const buttons = [];
+  if(state.companion.joined && TRAVEL[state.mapKey] && TRAVEL[state.mapKey].campus){
+    buttons.push({text:"Ride to campus together (12 gas)", cls:"gold", disabled: state.gas<12, onClick:()=>travelTo("campus",12)});
+  }
+  buttons.push({text:"Hang around"});
+  showModal("TACO BELL", flavor+tip, buttons);
+}
+function openGasStation(){
+  const price = state.prices.gas;
+  const canBuy = state.quarters>=price && state.gas<state.maxGas;
+  showModal("GAS STATION","Feed the machine quarters, one at a time, and watch the numbers climb.",[
+    {text:`Buy gas (${price}◉ → +50)`,cls:"gold",disabled:!canBuy,onClick:()=>{
+      state.quarters-=price; state.spending.gas+=price; state.gas=Math.min(state.maxGas,state.gas+50); refreshHud();
+      floatText("+50 gas", state.px, state.py-30);
+    }},
+    {text:"Leave"}
+  ]);
+}
+const PT_MARKET_LINES = [
+  "The Aldrich's crowd is out in full force, patchouli thick enough to taste. Someone offers you a free sample of something involving kale that you did not ask for and will not finish.",
+  "A guy with a guitar he's not playing wants to know 'what you're really doing here, man' — like, existentially. You did not have an answer prepared. He seems satisfied anyway.",
+  "Someone reads your palm without asking, informs you that you'll 'travel far from this peninsula,' and goes back to selling handmade soap like nothing happened.",
+  "A woman selling lavender bundles asks what you want to do with your life. You don't know. She nods like that's the correct answer."
+];
+const KINETIC_RACE_LINES = [
+  "This year's entry is a shopping cart welded to two inflated inner tubes and something that might be a sail. It capsizes forty feet in. The crowd goes feral with joy. The 'winner' — dead last, as always — gets carried off on shoulders like a war hero.",
+  "Someone's built a contraption entirely out of a hot tub, bicycle parts, and what appears to be a church pew. It doesn't finish. It doesn't need to. Coming in last is the actual goal here, and everyone but you seems to already know that.",
+  "A guy who introduces himself only as 'Skiff' has entered a vehicle made of driftwood and pure conviction. It sinks in the mud crossing with slow, tragic dignity. He is treated like a champion for the rest of the day."
+];
+function openDowntown(){
+  if(state.mapKey==="porttownsend"){
+    // Your own Wonder: hippie enough to stop watching and start racing.
+    if(civWon("porttownsend") && !state.wonders.porttownsend){ raceWonder(); return; }
+    // Outsider king crashing the race.
+    if(!state.wonders.porttownsend && isKingOfAny() && !isKing("porttownsend") && !state.breakIns.porttownsend){
+      if(breakIn("porttownsend")) return;
+    }
+    if(Math.random()<0.12){
+      state.flags.kineticRaceSeen = true;
+      showModal("THE RACE", pick(KINETIC_RACE_LINES) + "<br><br><span class='small'>Logged in the memory book.</span>", [{text:"Only in PT",cls:"gold"}], "kineticrace");
+      return;
+    }
+    const found = Math.random()<0.4;
+    let extra = "";
+    if(found){ gainQuarters(1); extra = "<br><br><span class='small'>+1 quarter, tossed in a tip jar for reasons nobody explains</span>"; }
+    showModal("ALDRICH'S MARKET", pick(PT_MARKET_LINES)+extra, [{text:"Okay",cls:"gold"}]);
+    return;
+  }
+  const found = Math.random()<0.4;
+  if(found){
+    gainQuarters(1);
+    showModal("DOWNTOWN","A quiet stretch of downtown. Someone dropped a quarter by the door.<br><br><span class='small'>+1 quarter</span>",[{text:"Nice",cls:"gold"}]);
+  } else {
+    showModal("DOWNTOWN","Nothing much happening downtown today.",[{text:"Okay",cls:"gold"}]);
+  }
+}
+function openRyan(){
+  if(state.mapKey==="pawaterfront"){
+    // Your own Wonder: enough of a hick to set the trebuchet off for real.
+    if(civWon("hick") && !state.wonders.hick){ trebuchetWonder(); return; }
+    // Outsider king trespassing the trebuchet.
+    if(!state.wonders.hick && isKingOfAny() && !isKing("hick") && !state.breakIns.hick){
+      if(breakIn("hick")) return;
+    }
+    showModal("THE PIER PARKING LOT","Ryan's truck sits in the pier lot, foghorn and all, parked next to a tarp-covered contraption you're choosing, for now, not to ask too many questions about. He's around here somewhere — he always is.",[{text:"Okay"}]);
+    return;
+  }
+  showModal("RYAN'S TRUCK","Ryan's truck — the one with the actual ferry foghorn wired in as a horn. He's nowhere around, as usual. He'll turn up when he turns up.",[{text:"Okay"}]);
+}
+function openPizza(){
+  const price = state.prices.pizza;
+  const canBuy = state.quarters>=price;
+  const waitress = !state.flags.pizzaWaitress ? " The waitress slides a basket of goldfish crackers your way — Lucas goes a little quiet." : "";
+  if(!state.flags.pizzaWaitress) state.flags.pizzaWaitress = true;
+  showModal("WATERFRONT PIZZA","The smell alone is worth the walk from the car."+waitress,[
+    {text:`Buy a slice (${price}◉)`,cls:"gold",disabled:!canBuy,onClick:()=>{
+      state.quarters-=price; state.spending.pizza+=price; state.pizza+=1; refreshHud();
+      floatText("+1 slice", state.px, state.py-30);
+    }},
+    {text:"Just looking"}
+  ]);
+}
+function openRecordStore(){
+  const price = state.prices.record;
+  const canBuy = state.quarters>=price;
+  const available = CD_POOL.filter(t=>!state.recordTitles.includes(t));
+  const nextTitle = available.length>0 ? available[Math.floor(Math.random()*available.length)] : "another copy of something you already own";
+  showModal("QUIMPER SOUND","You flip through the used bins. The guy behind the counter mutters something about downloading killing the business. You nod like you don't know exactly what he means.",[
+    {text:`Buy a CD (${price}◉)`,cls:"gold",disabled:!canBuy,onClick:()=>{
+      state.quarters-=price; state.spending.records+=price;
+      if(!state.recordTitles.includes(nextTitle)) state.recordTitles.push(nextTitle);
+      state.records = state.recordTitles.length;
+      refreshHud();
+      floatText("+1 record", state.px, state.py-30);
+    }},
+    {text:"Keep browsing"}
+  ]);
+}
+function openPier(){
+  state.flags.pierVisited = true;
+  if(Math.random()<0.3){
+    openSeagullCount();
+    return;
+  }
+  const buddy = charName(otherCharacter());
+  const lines = [
+    `You and ${buddy} sit at the end of the pier, feet hanging over the water, watching the ferry come in. Neither of you says much. You don't really have to.`,
+    `You catch yourselves doing the thing again — planning out an entire alternate life here. You'd run the record store. ${buddy} would take over the pizza place. The actual local kids walk right by like it's nothing, which drives you both a little crazy, because it's clearly not nothing.`,
+    `You watch the boats for a while and argue about whether you could actually survive a Port Townsend winter, or if you're just in love with the idea of it.`
+  ];
+  const line = lines[Math.floor(Math.random()*lines.length)];
+  const found = Math.random()<0.3;
+  let extra = "";
+  if(found){ gainQuarters(1); extra = "<br><br><span class='small'>You find a quarter someone dropped between the boards. +1 quarter</span>"; }
+  showModal("THE PIER", line+extra, [{text:"...",cls:"gold"}]);
+}
+
+/* ---- Port Townsend extras ---- */
+function openRoseTheater(){
+  const found = Math.random()<0.25;
+  let extra = found ? "<br><br><span class='small'>Loose change at the concession stand. +1 quarter</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("ROSE THEATER","The marquee's hand-painted and slightly crooked. Whatever's playing tonight, it's definitely not showing anywhere else on the peninsula."+extra,[{text:"Okay",cls:"gold"}]);
+}
+function openSilverwater(){
+  showModal("SILVERWATER CAFE","Right next door to the theater — the fanciest food either of you can almost afford. You split something you can't quite pronounce and call it a night out.",[{text:"Fancy",cls:"gold"}]);
+}
+function openSirens(){
+  showModal("SIRENS PUB","You linger by the door being extremely casual about not being old enough to get in. It doesn't work. It never works.",[{text:"Worth a shot",cls:"gold"}]);
+}
+function openChetzemoka(){
+  state.flags.chetzemokaVisited = true;
+  const found = Math.random()<0.3;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, found on a bench</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("CHETZEMOKA PARK","You wander the park's twisting little trails down toward the bluff, not really going anywhere, which is the whole point."+extra,[{text:"...",cls:"gold"}]);
+}
+const OPENER_BANTER = {
+  legionhall: [
+    "The opener's a guy with an acoustic guitar and extremely intense eye contact. It runs four songs too long. {buddy}'s delighted by all of it, unironically.",
+    "Tonight's opener is someone's cousin doing a spoken-word set nobody was warned about. {buddy} treats it like a religious experience."
+  ],
+  gorge: [
+    "The opening act is a band running three genres simultaneously and losing all of them. {buddy} will not stop talking about the bassist's hat.",
+    "The opener's a DJ set that's mostly just a guy adjusting knobs very seriously. {buddy} is, inexplicably, moved."
+  ],
+  showbox: [
+    "The opener's a solo act with a loop pedal and a lot of feelings. Somehow it kind of works. {buddy} will not admit this.",
+    "Tonight's opener plays eleven minutes of one song. {buddy} counts. Loudly."
+  ]
+};
+function openLegionHall(){
+  state.concert.legionVisits = (state.concert.legionVisits||0)+1;
+  const buddy = charName(otherCharacter());
+  const opener = pick(OPENER_BANTER.legionhall).replace("{buddy}", buddy);
+  switchMusic(CONCERT_MELODY, "square", 0.07);
+  const backToAmbient = ()=> switchMusic(MELODY, "triangle", 0.05);
+  if(state.concert.legionVisits===1){
+    const title = "Local demo — some band nobody's heard of before or since";
+    state.recordTitles.push(title); state.records = state.recordTitles.length;
+    refreshHud();
+    showModal("AMERICAN LEGION HALL", `${opener}<br><br>Folding chairs, a card table selling tickets, and a band that's way louder than the room can handle. It's perfect. Someone's selling a demo CD out of a cardboard box by the stage — you grab one.<br><br><span class='small'>+1 CD for the collection. Logged in the memory book.</span>`,
+      [{text:"Hell yeah",cls:"gold",onClick:backToAmbient}], "legionhall");
+  } else {
+    const canBuy = state.quarters>=LEGION_COST;
+    showModal("AMERICAN LEGION HALL", opener, [
+      {text:`Catch it (${LEGION_COST}◉)`,cls:"gold",disabled:!canBuy,onClick:()=>{
+        state.quarters-=LEGION_COST; state.spending.legion+=LEGION_COST; refreshHud(); floatText("Show time", state.px, state.py-30);
+        backToAmbient();
+      }},
+      {text:"Skip it", onClick: backToAmbient}
+    ], "legionhall");
+  }
+}
+
+/* ---- Sequim extras ---- */
+function openHurricaneCoffee(){
+  const found = Math.random()<0.2;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, tip jar overflow</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("HURRICANE COFFEE","Drive-thru coffee, again. There are approximately four hundred of these within ten minutes of here."+extra,[{text:"Okay",cls:"gold"}]);
+}
+function openGrocery(){
+  const found = Math.random()<0.3;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, found in a cart</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("GROCERY STORE","Not much reason to be here except it's something to do — though nobody needs the AC. This town barely breaks 75 in August, and someone will mention that to you, unprompted, within the hour."+extra,[{text:"Okay",cls:"gold"}]);
+}
+function openDairyQueen(){
+  const canBuy = state.quarters>=2;
+  showModal("DAIRY QUEEN","A Blizzard costs actual money you don't quite have.",[
+    {text:"Buy one anyway (2◉)",cls:"gold",disabled:!canBuy,onClick:()=>{ state.quarters-=2; state.spending.misc+=2; refreshHud(); floatText("worth it", state.px, state.py-30); }},
+    {text:"Just admire the sign"}
+  ]);
+}
+function openTacoTime(){
+  const found = Math.random()<0.25;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, under a booth</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("TACO TIME","Technically a little out of town, but you're pretending it's basically Sequim tonight."+extra,[{text:"Okay",cls:"gold"}]);
+}
+function openClassroom(){
+  const lines = [
+    "The professor's holding forth from his donut cushion again — hemorrhoids, dignity intact, somehow still the best class of the day.",
+    "Today's lecture veers wildly off-topic within four minutes. Nobody minds. Nobody ever minds.",
+    "Biology again. Something about salmon this time. The whole college seems built around fish and this professor's cushion, in roughly equal measure.",
+    "A kid in the front row asks a question so far off-topic the professor just stares at him for ten seconds before answering it anyway."
+  ];
+  const line = lines[Math.floor(Math.random()*lines.length)];
+  const firstTime = !state.flags.classroomVisited;
+  state.flags.classroomVisited = true;
+  state.flags.classroomVisits = (state.flags.classroomVisits||0) + 1;
+  const n = state.flags.classroomVisits;
+  let progress;
+  if(n>=4){
+    progress = state.flags.graduated
+      ? `Lectures attended: ${n} (diploma's already yours — this one's just for the donuts)`
+      : `Lectures attended: 4/4 — that's a diploma's worth. Graduation's on the table in the Memory Book.`;
+  } else {
+    const left = 4 - n;
+    progress = `Lectures attended: ${n}/4 toward a diploma — ${left} more lecture${left===1?"":"s"} and the college can't stop you.`;
+  }
+  let extra = `<br><br><span class='small'>${progress}</span>`;
+  if(firstTime) extra += "<br><span class='small'>Logged in the memory book.</span>";
+  showModal("PENINSULA COLLEGE", line + extra, [{text:"Fascinating",cls:"gold"}]);
+}
+function openDeli(){
+  const lines = [
+    "Round the Clock Deli. A dollar gets you a ham sandwich that's mostly bread, and the deviled eggs have been sitting there since a presidential administration you can't quite identify. Neither of you gets sick. This feels like luck rather than food safety.",
+    "The guy behind the counter recognizes you now, which is either a compliment or a warning. He throws in an extra pickle without being asked.",
+    "Someone mentions, in passing, that this place eventually gets shut down for selling beer to a table of obvious sixteen-year-olds. Not this table — you two never once got so much as carded for anything, somehow, which feels like its own kind of failure.",
+    "The deviled eggs today have a faint green tint nobody at the counter seems concerned about. You order the sandwich instead. Wise."
+  ];
+  const found = Math.random()<0.3;
+  let extra = "";
+  if(found){ gainQuarters(1); extra = "<br><br><span class='small'>+1 quarter, in the tip jar, untouched</span>"; }
+  showModal("ROUND THE CLOCK DELI", pick(lines)+extra, [{text:"Bold choice",cls:"gold"}]);
+}
+function openMillSite(){
+  const lines = [
+    "The old Rainier mill site — rusted out, fenced in that theoretical way that's never stopped anyone, still smelling faintly of sawdust decades on. You walk the perimeter and try to picture it running.",
+    "Someone's spray-painted something on the old loading dock that's either profound or just a name. Hard to tell which anymore.",
+    "You climb up onto a chunk of old foundation and can see clear out to the water — the pier, the empty parking lot, and if you squint, the Coho pulling in from Victoria, which might as well be another country entirely from here. Which, technically, it is.",
+    "Someone mentions Forks, further west, the way people mention the edge of a map — the characters just get more interesting the farther out you go, apparently. You've never actually been."
+  ];
+  const firstTime = !state.flags.millSiteVisited;
+  state.flags.millSiteVisited = true;
+  showModal("THE OLD MILL SITE", pick(lines) + (firstTime?"<br><br><span class='small'>Logged in the memory book.</span>":""), [{text:"Huh",cls:"gold"}]);
+}
+
+/* ---- PA Waterfront (a real place now) ---- */
+function openBookseller(){
+  state.flags.booksellerVisited = true;
+  const found = Math.random()<0.25;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, wedged in a used paperback like a bookmark</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  const lines = [
+    "Port Book & News. Newspapers from cities you'll never live in, a magazine rack that goes on for a mile, and the specific quiet of a store where nobody's going to bother you. You read half a book you have no intention of buying.",
+    "The guy at the counter is reading something with no cover and does not look up. You flip through the alt-weeklies for show listings and pretend you can afford the imported magazines."
+  ];
+  showModal("PORT BOOK & NEWS", pick(lines)+extra, [{text:"Okay",cls:"gold"}]);
+}
+function openShoeStore(){
+  const lines = [
+    "The shoe store downtown. You have no money for shoes. You try on a pair anyway, walk a lap, and put them back exactly where they were, which the staff clearly clocks and generously ignores.",
+    "A downtown storefront that has sold the same twelve styles of shoe since before you were born. Somehow still open. You respect it enormously and buy nothing."
+  ];
+  showModal("THE SHOE STORE", pick(lines), [{text:"Someday",cls:"gold"}]);
+}
+function openCafes(){
+  const found = Math.random()<0.3;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, left in a saucer</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  state.flags.cafesVisited = true;
+  const lines = [
+    "The good downtown coffee places and the restaurants with actual tablecloths — the ones you and {buddy} walk past constantly and never once go into, because they're for people with jobs and cars that don't make that sound. You window-shop the menus. Someday.",
+    "Downtown PA has a handful of places that are genuinely nice, which you know only from the outside. You loiter near the door of one long enough to feel the air conditioning, then keep walking.",
+    "There's a café here you've decided you'll come back to when you're rich. You've been deciding this for two years. The plan is airtight."
+  ];
+  const buddy = charName(otherCharacter());
+  showModal("DOWNTOWN PA", pick(lines).replace("{buddy}", buddy)+extra, [{text:"Someday",cls:"gold"}]);
+}
+function openWaterfrontTrail(){
+  state.flags.waterfrontTrailVisited = true;
+  const found = Math.random()<0.3;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, glinting in the trail gravel</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  const buddy = charName(otherCharacter());
+  const lines = [
+    `The waterfront trail. You and ${buddy} used to just walk this whole thing end to end for no reason — past the old mill site, out along the water, talking about nothing, killing an entire afternoon on foot. You do it again now. It still works.`,
+    `You take the long way along the trail, the strait on one side and the rusting bones of the mill on the other. Somewhere out on the water a ship's horn goes, low and far. Neither of you says anything for a while.`,
+    `The trail runs forever if you let it. You and ${buddy} have a running argument about how far you could actually walk before you'd have to turn around. Neither of you has ever tested it. That's not really the point.`
+  ];
+  showModal("THE WATERFRONT TRAIL", pick(lines)+extra, [{text:"...",cls:"gold"}]);
+}
+function openWaterfrontPier(){
+  state.flags.paPierVisited = true;
+  state.flags.waterfrontPierVisited = true;
+  const found = Math.random()<0.3;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, between the planks</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  const lines = [
+    "The pier. Lunch from somewhere forgettable, CBC Radio Victoria drifting in and out, the boats doing their slow boat things. You could sit here for hours. You have, in fact, sat here for hours.",
+    "You walk out to the end of the pier and just watch the water. Across the strait, Victoria sits there being a whole other country, lit up and unbothered — forever a rumor of a bigger life just out of reach.",
+    "The tide's doing something. The acres of empty parking behind you were built for crowds that never quite show. It's peaceful in a slightly haunted way, which is the PA waterfront's entire brand."
+  ];
+  showModal("THE WATERFRONT", pick(lines)+extra, [{text:"...",cls:"gold"}]);
+}
+function openCohoDock(){
+  state.flags.cohoVisited = true;
+  const buddy = charName(otherCharacter());
+  const lines = [
+    `The Coho's coming in from Victoria, and you both watch it dock like it's arriving from somewhere important — which, compared to here, it kind of is. You could get on it. You have passports somewhere, probably. You never do.`,
+    `The MV Coho, the Victoria ferry, easing in against the pilings. Distant, lovely, beautiful, wonderful Canada, ninety minutes across the water and completely impossible on your budget. ${buddy} waves at it. It does not wave back.`,
+    `You stand at the Coho dock doing the math on two ferry tickets to Victoria for the four-hundredth time. The math does not improve. Someday, though. It's a nice dock to dream on.`
+  ];
+  showModal("COHO FERRY DOCK", pick(lines), [{text:"Someday",cls:"gold"}]);
+}
+function openLavender(){
+  if(!state.flags.foundLavender){
+    state.flags.foundLavender = true;
+    document.getElementById("dreamBtn").classList.remove("hidden");
+    showModal("PURPLE HAZE LAVENDER","You wander into the rows just to see what the fuss is about. The air out here does something. Everything goes soft at the edges, a little purple. When you blink, you could be somewhere else entirely — if you wanted.",
+      [{text:"...where am I",cls:"gold",onClick:openDreamOverlay}]);
+  } else {
+    openDreamOverlay();
+  }
+}
+function openPool(){
+  // Your own Wonder: you've become enough of a retiree to earn the capstone.
+  if(civWon("sequim") && !state.wonders.sequim){ poolWonder(); return; }
+  // Outsider king trespassing the retiree Wonder.
+  if(!state.wonders.sequim && isKingOfAny() && !isKing("sequim") && !state.breakIns.sequim){
+    if(breakIn("sequim")) return;
+  }
+  const firstTime = !state.flags.poolVisited;
+  state.flags.poolVisited = true;
+  const hostile = isKingOfAny() && !isKing("sequim");
+  const caught = Math.random() < (hostile ? 0.75 : 0.35);
+  let text = "You throw the pool furniture in, sink to the bottom sitting on a chair, and have a very serious underwater tea party until your lungs give out.";
+  if(caught){
+    state.gas = Math.max(0, state.gas-8);
+    text += hostile
+      ? " The golf cart is already waiting this time — word's out about you. The guard doesn't even bother yelling, just points at the exit with the grim patience of a man who has your license plate memorized. You go.<br><br><span class='small'>-8 gas, and you're on a list now</span>"
+      : " Then the golf cart shows up — the security guard, slow and furious. You bail, tearing out of the development way faster than you should.<br><br><span class='small'>-8 gas, dignity: also gone</span>";
+  } else if(firstTime){
+    gainQuarters(1);
+    text += " Someone's dropped a quarter at the bottom. Score.<br><br><span class='small'>+1 quarter</span>";
+  }
+  if(firstTime) text += "<br><br><span class='small'>Logged in the memory book.</span>";
+  refreshHud();
+  showModal("THE POOL", text, [{text:"Worth it",cls:"gold"}]);
+}
+
+/* ---- Lost Mountain extras ---- */
+function openChickens(){
+  const found = Math.random()<0.25;
+  let extra = found ? "<br><br><span class='small'>+1 quarter — one's standing on it, weirdly</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("THE CHICKENS","They do not care about your problems. This is, weirdly, comforting."+extra,[{text:"Okay",cls:"gold"}]);
+}
+function openShootingRange(){
+  showModal("SHOOTING RANGE","Somebody's out at the range again, the pops echoing down the valley. You give it a wide berth and keep walking.",[{text:"Okay",cls:"gold"}]);
+}
+function openCampingSpot(){
+  state.flags.lostMountainWoods = true;
+  const found = Math.random()<0.25;
+  let extra = found ? "<br><br><span class='small'>+1 quarter, in the dirt by the fire ring</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("CAMPSITE","You've camped out here enough times to know where all the roots are. Worth it for the stars alone."+extra,[{text:"...",cls:"gold"}]);
+}
+
+/* ---- Travel / scenes / ferry ---- */
+function openTravel(skipRyan){
+  const options = TRAVEL[state.mapKey];
+  const now = Date.now();
+  let ryanOffer = null;
+  if(state.mapKey==="campus" && options.pawaterfront) ryanOffer = "pawaterfront";
+  else if(state.mapKey==="pawaterfront" && options.campus) ryanOffer = "campus";
+  else if(state.mapKey==="campus" && options.sequim) ryanOffer = "sequim";
+  else if(state.mapKey==="sequim" && options.campus) ryanOffer = "campus";
+  if(!skipRyan && ryanOffer && now>state.flags.ryanDriveCooldown && Math.random()<0.25){
+    state.flags.ryanDriveCooldown = now + 120000;
+    showModal("RYAN'S TRUCK","Ryan swings by in that enormous truck of his, foghorn blaring instead of a horn. \"Hop in, I'm headed that way anyway.\"",[
+      {text:"Hop in",cls:"gold",onClick:()=>travelTo(ryanOffer,0)},
+      {text:"We'll drive ourselves",onClick:()=>openTravel(true)}
+    ]);
+    return;
+  }
+  const buttons = Object.keys(options).map(dest=>{
+    const o = options[dest];
+    return {
+      text: `${o.label} (${o.cost} gas)`,
+      cls: state.gas>=o.cost ? "gold" : "",
+      disabled: state.gas < o.cost,
+      onClick: ()=> o.scene ? playScene(dest,o.cost) : travelTo(dest,o.cost)
+    };
+  });
+  const canAffordAny = Object.values(options).some(o=>state.gas>=o.cost);
+  if(!canAffordAny){
+    const cheapestKey = Object.keys(options).reduce((a,b)=> options[a].cost<options[b].cost?a:b);
+    const o = options[cheapestKey];
+    buttons.unshift({
+      text:`Coast it in on fumes → ${o.label} (5◉, no gas)`,
+      cls: state.quarters>=5 ? "gold" : "",
+      disabled: state.quarters<5,
+      onClick: ()=>{
+        state.quarters -= 5; refreshHud();
+        if(o.scene) playScene(cheapestKey,0); else travelTo(cheapestKey,0);
+      }
+    });
+  }
+  if(state.concert.windowType){
+    const wt = state.concert.windowType;
+    const cost = wt==="gorge" ? GORGE_COST : SEATTLE_COST;
+    const label = wt==="gorge" ? "the Gorge" : "the Seattle show";
+    buttons.unshift({
+      text: `🎫 Catch ${label} (${cost}◉)`,
+      cls: state.quarters>=cost ? "gold" : "",
+      disabled: state.quarters<cost,
+      onClick: ()=> attendBigShow(wt)
+    });
+  }
+  buttons.push({text:"Stay put"});
+  showModal("DRIVE SOMEWHERE","Check the gas meter and pick a direction.", buttons);
+}
+function playScene(id,cost){
+  state.gas -= cost;
+  const sc = SCENES[id];
+  const line = sc.lines[Math.floor(Math.random()*sc.lines.length)];
+  const firstTime = !state.flags[sc.flag];
+  state.flags[sc.flag] = true;
+  refreshHud();
+  showModal(sc.title, line + (firstTime? "<br><br><span class='small'>Logged in the memory book.</span>":""), [{text:"...",cls:"gold"}], sc.image);
+}
+function travelTo(dest,cost){
+  state.gas -= cost;
+  state.tripCount++;
+  state.mapKey = dest;
+  const sp = ENTRY_SPAWN[dest];
+  state.px = sp.x*TILE; state.py = sp.y*TILE;
+  state.lastTileKey = null;
+  if(state.companion.joined){
+    state.companion.x = state.px; state.companion.y = state.py;
+    state.companion.history = [];
+  }
+  if(dest==="lostmountain"){
+    enterLostMountain();
+  }
+  if(dest==="pawaterfront"){
+    rollRyanPresence();
+  }
+  updateSidekickButtons();
+  document.getElementById("locLabel").textContent = mapDef().label;
+  refreshHud();
+
+  if(jobSurpriseCheck()) return;
+  if(advanceConcertWindow()) return;
+  concertWindowCheck();
+}
+function openFerry(){
+  const wt = state.concert.windowType;
+  if(wt==="gorge"){
+    if(state.quarters>=GORGE_COST){ attendBigShow("gorge"); }
+    else showModal("FERRY DOCK", `The Gorge show's on, but you're short. Need ${GORGE_COST}◉, you've got ${state.quarters}. The window won't stay open long.`, [{text:"Keep hustling",cls:"gold"}]);
+  } else if(wt==="seattle"){
+    if(state.quarters>=SEATTLE_COST){ attendBigShow("seattle"); }
+    else showModal("FERRY DOCK", `There's a Seattle show, but you need ${SEATTLE_COST}◉ for fare and a ticket. You've got ${state.quarters}.`, [{text:"Keep hustling",cls:"gold"}]);
+  } else {
+    const roll = Math.random();
+    if(roll < 0.35){
+      openFerryGame();
+    } else if(roll < 0.7){
+      state.flags.ferryDaydream = true;
+      const buddy = charName(otherCharacter());
+      const lines = [
+        `You lean on the railing and start in on the plan again: you'd run this ferry. Not drive it — run it. Your route, back and forth across the Sound, picking up whoever's waiting at each dock. Bands set up on the car deck. Somebody's always got a cooler. You'd know everyone's name inside a month. ${buddy} wants a cut of the tips. Neither of you has worked out a single logistical detail and neither of you plans to start now.`,
+        `Today's version of the plan involves a covered stage bolted to the car deck and a strict no-cover-songs policy. ${buddy} is drawing the route map on a napkin. It mostly loops back to Port Townsend.`,
+        `You've decided the ferry-captain plan requires a uniform. ${buddy} disagrees about the hat. This derails the conversation for a genuinely long time.`
+      ];
+      const line = lines[Math.floor(Math.random()*lines.length)];
+      showModal("THE FERRY DOCK", line, [{text:"Someday",cls:"gold"}], "ferrydream");
+    } else {
+      showModal("FERRY DOCK","Nothing worth the fare today. Nothing to do but wait for word of a show.",[{text:"Okay",cls:"gold"}]);
+    }
+  }
+}
+
+/* ---------- Hacky sack minigame ---------- */
+let hacky = null;
+function openHackySack(){
+  if(Date.now() < state.flags.hackySackCooldown){
+    showModal("HACKY SACK","Still catching your breath from last time. Go do something else for a minute.",[{text:"Fine",cls:"gold"}]);
+    return;
+  }
+  hacky = {round:1, hits:0, pos:0, dir:1, speed:0.9, active:false, countdownTimer:null};
+  document.getElementById("hackyRound").textContent = 1;
+  document.getElementById("hackyHits").textContent = 0;
+  const zone = document.getElementById("hackyZone");
+  zone.style.left = "35%"; zone.style.width = "30%";
+  document.getElementById("hackyMarker").style.left = "0%";
+  const tapBtn = document.getElementById("hackyTapBtn");
+  const cd = document.getElementById("hackyCountdown");
+  tapBtn.disabled = true;
+  state.paused = true;
+  document.getElementById("hackyOverlay").classList.remove("hidden");
+  let count = 3;
+  cd.textContent = "Ready… " + count;
+  hacky.countdownTimer = setInterval(()=>{
+    count--;
+    if(count<=0){
+      clearInterval(hacky.countdownTimer);
+      cd.textContent = "GO!";
+      setTimeout(()=>{ cd.textContent=""; },500);
+      hacky.active = true;
+      tapBtn.disabled = false;
+      requestAnimationFrame(hackyLoop);
+    } else {
+      cd.textContent = "Ready… " + count;
+    }
+  },650);
+}
+function hackyLoop(){
+  if(!hacky || !hacky.active) return;
+  hacky.pos += hacky.dir*hacky.speed;
+  if(hacky.pos>=100){hacky.pos=100;hacky.dir=-1;}
+  if(hacky.pos<=0){hacky.pos=0;hacky.dir=1;}
+  document.getElementById("hackyMarker").style.left = hacky.pos+"%";
+  requestAnimationFrame(hackyLoop);
+}
+function hackyHit(){
+  if(!hacky || !hacky.active) return;
+  const zoneEl = document.getElementById("hackyZone");
+  const zoneStart = parseFloat(zoneEl.style.left);
+  const zoneEnd = zoneStart + parseFloat(zoneEl.style.width);
+  const hit = hacky.pos>=zoneStart && hacky.pos<=zoneEnd;
+  if(hit) hacky.hits++;
+  document.getElementById("hackyHits").textContent = hacky.hits;
+  hacky.round++;
+  if(hacky.round>8){
+    endHackySack();
+    return;
+  }
+  document.getElementById("hackyRound").textContent = hacky.round;
+  hacky.speed = Math.min(2.6, hacky.speed+0.09);
+  const w = Math.max(14, 30 - hacky.round*2);
+  zoneEl.style.width = w+"%";
+  zoneEl.style.left = (Math.random()*(100-w))+"%";
+}
+function endHackySack(){
+  hacky.active = false;
+  state.flags.hackySackCooldown = Date.now() + 40000;
+  document.getElementById("hackyOverlay").classList.add("hidden");
+  state.paused = false;
+  const earned = hacky.hits;
+  if(earned>0) state.flags.hackySackWon = true;
+  if(hacky.hits>=7) playFanfare();
+  gainQuarters(earned);
+  refreshHud();
+  showModal("HACKY SACK","You kept it up "+hacky.hits+" out of 8 times.<br><br><span class='small'>+"+earned+" quarters</span>",[{text:"Nice",cls:"gold"}]);
+}
+document.getElementById("hackyTapBtn").addEventListener("click", hackyHit);
+function cancelHackySack(){
+  if(hacky){
+    clearInterval(hacky.countdownTimer);
+    hacky.active = false;
+    hacky = null;
+  }
+  document.getElementById("hackyOverlay").classList.add("hidden");
+  state.paused = false;
+  state.flags.hackySackCooldown = Date.now() + 3000;
+}
+document.getElementById("hackyCancelBtn").addEventListener("click", cancelHackySack);
+
+/* ---------- Count the Seagulls (the pier's answer to hunting bison) ---------- */
+let seagullGame = null;
+function openSeagullCount(){
+  seagullGame = {count:0, active:false, spawnTimer:null, endTimer:null, countdownTimer:null};
+  document.getElementById("seagullTally").textContent = "0";
+  const field = document.getElementById("seagullField");
+  field.innerHTML = "";
+  const cd = document.getElementById("seagullCountdown");
+  state.paused = true;
+  document.getElementById("seagullOverlay").classList.remove("hidden");
+  let count = 3;
+  cd.textContent = "Ready… " + count;
+  seagullGame.countdownTimer = setInterval(()=>{
+    count--;
+    if(count<=0){
+      clearInterval(seagullGame.countdownTimer);
+      cd.textContent = "GO!";
+      setTimeout(()=>{ cd.textContent=""; },500);
+      seagullGame.active = true;
+      spawnSeagull();
+      seagullGame.endTimer = setTimeout(endSeagullCount, 8000);
+    } else {
+      cd.textContent = "Ready… " + count;
+    }
+  },650);
+}
+function spawnSeagull(){
+  if(!seagullGame || !seagullGame.active) return;
+  const field = document.getElementById("seagullField");
+  const bird = document.createElement("div");
+  bird.className = "gull";
+  bird.textContent = "🕊️";
+  bird.style.left = (6+Math.random()*78) + "%";
+  bird.style.top = (8+Math.random()*72) + "%";
+  const remove = ()=>{ if(bird.parentNode) bird.parentNode.removeChild(bird); };
+  const lifeTimer = setTimeout(remove, 1100);
+  const tap = ev=>{
+    ev.preventDefault();
+    clearTimeout(lifeTimer);
+    seagullGame.count++;
+    document.getElementById("seagullTally").textContent = seagullGame.count;
+    bird.style.opacity = "0"; bird.style.transform = "scale(1.4)";
+    setTimeout(remove, 150);
+  };
+  bird.addEventListener("click", tap);
+  bird.addEventListener("touchstart", tap);
+  field.appendChild(bird);
+  if(seagullGame.active){
+    seagullGame.spawnTimer = setTimeout(spawnSeagull, 480+Math.random()*380);
+  }
+}
+function cancelSeagullCount(){
+  if(seagullGame){
+    clearInterval(seagullGame.countdownTimer);
+    clearTimeout(seagullGame.spawnTimer);
+    clearTimeout(seagullGame.endTimer);
+    seagullGame.active = false;
+    seagullGame = null;
+  }
+  document.getElementById("seagullField").innerHTML = "";
+  document.getElementById("seagullOverlay").classList.add("hidden");
+  state.paused = false;
+}
+document.getElementById("seagullCancelBtn").addEventListener("click", cancelSeagullCount);
+function endSeagullCount(){
+  seagullGame.active = false;
+  clearTimeout(seagullGame.spawnTimer);
+  document.getElementById("seagullField").innerHTML = "";
+  document.getElementById("seagullOverlay").classList.add("hidden");
+  state.paused = false;
+  const count = seagullGame.count;
+  state.flags.seagullBest = Math.max(state.flags.seagullBest||0, count);
+  const earned = Math.min(6, Math.floor(count/2));
+  if(earned>0) gainQuarters(earned);
+  if(count>=12) playFanfare();
+  const verdict = count>=12 ? "Legendary. A genuinely unwell amount of focus."
+    : count>=6 ? "Respectable. Very committed to this bit."
+    : "A modest count. The gulls remain, on the whole, undercounted.";
+  showModal("SEAGULL COUNT", `Final tally: ${count} seagulls. ${verdict}<br><br><span class='small'>${earned>0?`+${earned} quarters — someone assumed you dropped something and handed you change`:"No reward this time, but the gulls know your dedication."}</span>`,
+    [{text:"Worth it",cls:"gold"}]);
+}
+
+/* ---------- Ferry Captain (the ferry-captain daydream, but playable) ---------- */
+const FERRY_LANES = [20, 65, 110];
+const FERRY_OBSTACLES = ["🚢","📦","🐋","🏴‍☠️"];
+let ferryGame = null;
+function openFerryGame(){
+  ferryGame = {lane:1, score:0, hits:0, active:false, spawnTimer:null, endTimer:null, countdownTimer:null};
+  document.getElementById("ferryScore").textContent = "0";
+  document.getElementById("ferryHits").textContent = "0";
+  const field = document.getElementById("ferryField");
+  field.querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
+  const boat = document.getElementById("ferryBoat");
+  boat.style.top = FERRY_LANES[1]+"px";
+  const cd = document.getElementById("ferryCountdown");
+  state.paused = true;
+  switchMusic(CONCERT_MELODY, "square", 0.06);
+  document.getElementById("ferryOverlay").classList.remove("hidden");
+  let count = 3;
+  cd.textContent = "Ready… " + count;
+  ferryGame.countdownTimer = setInterval(()=>{
+    count--;
+    if(count<=0){
+      clearInterval(ferryGame.countdownTimer);
+      cd.textContent = "CAST OFF!";
+      setTimeout(()=>{ cd.textContent=""; },500);
+      ferryGame.active = true;
+      spawnFerryObstacle();
+      ferryGame.endTimer = setTimeout(()=>endFerryGame(false), 14000);
+    } else {
+      cd.textContent = "Ready… " + count;
+    }
+  },650);
+}
+function moveFerryLane(dir){
+  if(!ferryGame || !ferryGame.active) return;
+  ferryGame.lane = Math.max(0, Math.min(2, ferryGame.lane+dir));
+  document.getElementById("ferryBoat").style.top = FERRY_LANES[ferryGame.lane]+"px";
+}
+function spawnFerryObstacle(){
+  if(!ferryGame || !ferryGame.active) return;
+  const field = document.getElementById("ferryField");
+  const lane = Math.floor(Math.random()*3);
+  const el = document.createElement("div");
+  el.className = "ferryObstacle";
+  el.textContent = FERRY_OBSTACLES[Math.floor(Math.random()*FERRY_OBSTACLES.length)];
+  el.style.top = FERRY_LANES[lane]+"px";
+  el.style.left = "94%";
+  field.appendChild(el);
+  requestAnimationFrame(()=>{
+    el.style.transition = "left 2.6s linear";
+    el.style.left = "-30px";
+  });
+  let resolved = false;
+  const checkTimer = setInterval(()=>{
+    if(resolved || !ferryGame){ clearInterval(checkTimer); return; }
+    const rect = el.getBoundingClientRect(), fieldRect = field.getBoundingClientRect();
+    const relLeft = rect.left - fieldRect.left;
+    if(relLeft < 42 && relLeft > 2 && lane===ferryGame.lane){
+      resolved = true;
+      ferryGame.hits++;
+      document.getElementById("ferryHits").textContent = ferryGame.hits;
+      el.remove();
+      clearInterval(checkTimer);
+      if(ferryGame.hits>=3) endFerryGame(true);
+      return;
+    }
+    if(relLeft < -20){
+      resolved = true;
+      ferryGame.score++;
+      document.getElementById("ferryScore").textContent = ferryGame.score;
+      el.remove();
+      clearInterval(checkTimer);
+    }
+  }, 80);
+  if(ferryGame.active){
+    ferryGame.spawnTimer = setTimeout(spawnFerryObstacle, 650+Math.random()*450);
+  }
+}
+function cancelFerryGame(){
+  if(ferryGame){
+    clearInterval(ferryGame.countdownTimer);
+    clearTimeout(ferryGame.spawnTimer);
+    clearTimeout(ferryGame.endTimer);
+    ferryGame.active = false;
+    ferryGame = null;
+  }
+  document.getElementById("ferryField").querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
+  document.getElementById("ferryOverlay").classList.add("hidden");
+  state.paused = false;
+  switchMusic(MELODY, "triangle", 0.05);
+}
+document.getElementById("ferryCancelBtn").addEventListener("click", cancelFerryGame);
+function endFerryGame(ranAground){
+  if(!ferryGame) return;
+  ferryGame.active = false;
+  clearTimeout(ferryGame.spawnTimer);
+  clearTimeout(ferryGame.endTimer);
+  document.getElementById("ferryField").querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
+  document.getElementById("ferryOverlay").classList.add("hidden");
+  state.paused = false;
+  switchMusic(MELODY, "triangle", 0.05);
+  const score = ferryGame.score;
+  state.flags.ferryGameBest = Math.max(state.flags.ferryGameBest||0, score);
+  const earned = Math.min(6, Math.floor(score/2));
+  if(earned>0) gainQuarters(earned);
+  if(score>=10 && !ranAground) playFanfare();
+  const verdict = ranAground ? "Ran aground. A cruise ship, specifically. There will be paperwork."
+    : score>=10 ? "Master mariner. Frankly alarming skill for a car ferry."
+    : score>=5 ? "Respectable dodging. The Coast Guard remains unbothered."
+    : "A rough crossing, but you made it.";
+  showModal("FERRY CAPTAIN", `Dodged: ${score}. ${verdict}<br><br><span class='small'>${earned>0?`+${earned} quarters — nobody asks where the tips came from`:"No reward this run, but the Sound remembers."}</span>`,
+    [{text:"Again someday",cls:"gold"}]);
+}
+document.getElementById("ferryUpBtn").addEventListener("click", ()=>moveFerryLane(-1));
+document.getElementById("ferryDownBtn").addEventListener("click", ()=>moveFerryLane(1));
+
+
+/* ---------- Civilizations, Wonders & Kingship ---------- */
+// Every interactive spot pulls you toward one of the peninsula's three tribes.
+// Hit the threshold and that tribe's Wonder becomes a one-time capstone.
+const CIV_THRESHOLD = 0.65;
+const CIVILIZATIONS = {
+  sequim: {
+    adjective:"Retiree", title:"Champion of the Retirees",
+    wonderName:"The Pool, Finally", winScene:"poolwonder",
+    spots:[
+      {k:"sequim:h"},{k:"sequim:i"},{k:"sequim:j"},{k:"sequim:k"},
+      {k:"sequim:D"},{k:"sequim:u"},{k:"sequim:z"},{k:"sequim:L"},{k:"sequim:T"}
+    ]
+  },
+  porttownsend: {
+    adjective:"Hippie", title:"Champion of the Hippies",
+    wonderName:"The Race", winScene:"kineticrace",
+    spots:[
+      {k:"porttownsend:a"},{k:"porttownsend:b"},{k:"porttownsend:c"},{k:"porttownsend:e"},
+      {k:"porttownsend:g"},{k:"porttownsend:Z"},{k:"porttownsend:R"},{k:"porttownsend:W"},
+      {k:"porttownsend:D"},{flag:"kineticRaceSeen"}
+    ]
+  },
+  hick: {
+    adjective:"Hick", title:"Champion of the Hicks",
+    wonderName:"The Trebuchet", winScene:"trebuchet",
+    spots:[
+      {k:"campus:m"},{k:"campus:X"},
+      {k:"pawaterfront:x"},{k:"pawaterfront:w"},{k:"pawaterfront:P"},{k:"pawaterfront:Y"},
+      {k:"pawaterfront:E"},{k:"pawaterfront:B"},{k:"pawaterfront:S"},{k:"pawaterfront:O"},
+      {flag:"metRyan"}
+    ]
+  }
+};
+const CIV_SPOT_KEYS = new Set();
+Object.values(CIVILIZATIONS).forEach(c=>c.spots.forEach(s=>{ if(s.k) CIV_SPOT_KEYS.add(s.k); }));
+
+function recordCivVisit(mapKey, ch){
+  const k = mapKey+":"+ch;
+  if(CIV_SPOT_KEYS.has(k)) state.civVisited[k] = true;
+}
+function civCount(key){
+  let n=0;
+  CIVILIZATIONS[key].spots.forEach(s=>{
+    if(s.flag){ if(state.flags[s.flag]) n++; }
+    else if(state.civVisited[s.k]) n++;
+  });
+  return n;
+}
+function civTotal(key){ return CIVILIZATIONS[key].spots.length; }
+function civPct(key){ return Math.round(civCount(key)/civTotal(key)*100); }
+function civWon(key){ return civCount(key)/civTotal(key) >= CIV_THRESHOLD; }
+function isKing(key){ return !!state.wonders[key]; }
+function isKingOfAny(){ return Object.keys(state.wonders).some(k=>state.wonders[k]); }
+function firstKingCiv(){ return Object.keys(state.wonders).find(k=>state.wonders[k]) || null; }
+function dominantCiv(){
+  return Object.keys(CIVILIZATIONS).slice().sort((a,b)=>civPct(b)-civPct(a))[0];
+}
+
+/* --- The three Wonders --- */
+function poolWonder(){
+  showModal("THE POOL, FINALLY",
+    "You've put in the hours. Golf-cart security actually waves you through now, like you're a resident with a grievance and a lawn. For exactly one glorious afternoon the gated pool is yours — white plastic patio chairs and all. How do you want this to go?",
+    [
+      {text:"Slip out clean", cls:"gold", onClick:()=>poolWonderResolve("clean")},
+      {text:"Go out legendary", cls:"rust", onClick:()=>poolWonderResolve("legend")}
+    ], "poolwonder");
+}
+function poolWonderResolve(kind){
+  state.wonders.sequim = true;
+  state.flags.poolWonderDone = true;
+  playFanfare(); refreshHud();
+  const buddy = charName(otherCharacter());
+  let body;
+  if(kind==="clean"){
+    body = `You run the whole ceremony — every chair sunk to the bottom, a full underwater tea party held with grave dignity — and then you're up, dried off, and gone before a single golf cart rounds the corner. No witnesses. No paperwork. Just a small, perfect, victimless legend that only you and ${buddy} will ever be able to prove.`;
+  } else {
+    body = `You go enormous. Every patio chair goes in. The good lounger goes in. A forgotten pool noodle becomes a ceremonial staff. By the time the golf-cart cavalry arrives — three carts, lights spinning, a man with a clipboard and a personal vendetta — you're standing on the diving board like you hold the deed. You do not hold the deed. You are banned for what the sign will later specify as 'life.' Absolutely, completely worth it.`;
+  }
+  showModal("CHAMPION OF THE RETIREES", body + "<br><br><span class='small'>Wonder complete — logged in the Civilizations book. You wear a crown now; the other tribes will notice.</span>", [{text:"Long may I reign",cls:"gold"}], "poolwonder");
+}
+function raceWonder(){
+  state.wonders.porttownsend = true;
+  state.flags.raceWonderDone = true;
+  state.flags.kineticRaceSeen = true;
+  playFanfare(); refreshHud();
+  const buddy = charName(otherCharacter());
+  const body = `This year you don't watch. This year you and ${buddy} have a contraption — a shopping cart, two inner tubes, a bedsheet sail, and a frankly unsafe amount of confidence — entered under a team name the announcer refuses to say twice. It makes it almost forty feet before folding into the mud pit with tremendous, slow-motion dignity. Dead last. The crowd goes feral. They carry you both off on their shoulders, because coming in last was always the entire point, and nobody in the history of this race has understood that as completely as you two do right now.<br><br><span class='small'>Wonder complete — logged in the Civilizations book. You wear a crown now; the other tribes will notice.</span>`;
+  showModal("THE RACE", body, [{text:"Last place forever",cls:"gold"}], "kineticrace");
+}
+function trebuchetWonder(){
+  state.wonders.hick = true;
+  state.flags.trebuchetFired = true;
+  state.flags.metRyan = true;
+  playFanfare(); refreshHud();
+  const targets = [
+    "a cluster of retirees down the pier, who scatter with a speed that honestly reflects well on their cardio. The frozen chicken lands exactly where they'd been standing and does not so much as crack. Ryan calls this 'a warning shot.' Nobody agreed to a war.",
+    "a stand of trees along the waterfront, taking out one branch that had, in Ryan's words, 'had it coming for years.' Birds relocate their entire society. The chicken is never recovered. A small local myth begins that very afternoon.",
+    "Gino's absurd hilltop mansion, clear across town — a physically impossible shot Ryan should not have made and will now never, ever stop describing. A distant, expensive-sounding crunch drifts back on the wind. You all become suddenly, deeply interested in being somewhere else.",
+    "a row of long-abandoned cars in the acres of empty pier lot, because Ryan, for all his chaos, has standards about whose windshield earns a frozen chicken. The resulting car-alarm symphony can be heard from the Coho dock.",
+    "the open water, just to see. It skips. Twice. Ryan weeps openly and without shame. Somewhere across the strait, Canada remains serenely unaware of how close it just came."
+  ];
+  const t = pick(targets);
+  const body = `Ryan hauls the tarp off the rig in the pier parking lot — the compressed-gas trebuchet, run off the very same setup that powers the truck's foghorn, a machine that should not exist and yet absolutely does. He loads a frozen chicken with the reverence of a man loading a cannon. \"Been saving this one,\" he says. It fires with a concussive THOOMP that trips three car alarms at once, launching the bird clean at ${t}<br><br>You did it. The Trebuchet is real, it works, and you were standing right there.<br><br><span class='small'>Wonder complete — logged in the Civilizations book. You wear a crown now; the other tribes will notice.</span>`;
+  showModal("THE TREBUCHET", body, [{text:"THOOMP",cls:"gold"}], "trebuchet");
+}
+
+/* --- Breaking in: once you're king of one tribe, you can trespass the other two.
+       Six directional scenes; a given run only reaches the combos your crown(s) allow. --- */
+const BREAKIN_SCENES = {
+  hick: {
+    porttownsend: {title:"CRASHING THE RACE",
+      body:"Word gets around the west end that the Champion of the Hicks is entering the kinetic race, and it lands in Port Townsend like a rock through a stained-glass window. You show up with a contraption made of truck parts and pure spite — no sail, no whimsy, just torque. It is aggressively not in the spirit of the thing. You come in <i>first</i>, which turns out to be the single rudest possible outcome: first place is losing, everyone keeps trying to explain, as they hand a hick a trophy they physically did not want to give up. You have broken the race by winning it. It's beautiful."},
+    sequim: {title:"THE POOL JOB",
+      body:"You case the gated pool from Ryan's truck for exactly as long as your patience allows, then simply tuck in behind a resident's golf cart, wave like you were born there, and cannonball. The retirees are appalled in a way that transcends language. Security gives chase — but you know one thing they don't: exactly where the back fence has been quietly rusting through since 1994. You're back on the road, dripping, before the first cart clears the clubhouse. A hick, in the retiree pool. They'll be relitigating it at the HOA meeting for months."}
+  },
+  porttownsend: {
+    hick: {title:"A GENTLER TREBUCHET",
+      body:"You roll up to the waterfront in tie-dye and a borrowed hemp poncho, radiating a peace-and-love energy that makes Ryan visibly nervous. You've come to fire the trebuchet — hippie-style. There's a whole discussion about the ethics of launching a frozen chicken. You compromise on a very ripe, entirely compostable heirloom squash, launched with a small ceremony and a sincere apology to the squash. It flies terribly. Ryan is deeply moved and slightly ashamed of how moved he is. The hicks do not know what to do with you. Neither, honestly, do you."},
+    sequim: {title:"TOO NICE TO EJECT",
+      body:"You infiltrate the retiree pool not by stealth but by sheer disarming warmth — you compliment three separate sun hats, ask a man some real follow-up questions about his hydrangeas, and are somehow handed a lemonade before anyone clocks that you don't live here and never will. By the time the golf carts mobilize, you've already led an impromptu aqua-aerobics class and made four genuine friends. Security escorts you out to a light smattering of applause. You broke into the pool by being, frankly, too pleasant to remove. The retirees remain deeply conflicted."}
+  },
+  sequim: {
+    hick: {title:"A BUSINESSLIKE THOOMP",
+      body:"Champion of the Retirees, at the mill site, in full golf attire, moving with the unbothered authority of a man who has never once been told 'no' by a customer-service representative. You don't sneak up on the trebuchet — you simply inform Ryan that you'll be operating it now, and something in your tone makes him hand over the lanyard without argument. You launch the frozen chicken with a crisp, businesslike THOOMP and a small satisfied nod, as though you've just approved an expense report. The hicks are horrified and, privately, a little impressed. You do not stay for the debrief. You have a tee time."},
+    porttownsend: {title:"THE CART THAT DIDN'T SINK",
+      body:"You enter the kinetic race in a pristine white golf cart, which violates every rule and also, somehow, the letter of none of them. While everyone else's contraption is lashed together from driftwood and hope, yours has cup holders. You glide across the mud pit without sinking, which the crowd finds either miraculous or deeply offensive — opinions vary block to block. You post a time so competent it's an automatic disqualification, then announce your retirement from kinetic racing on the spot and cart off before the mud can reach your slacks. Port Townsend will never quite forgive the efficiency of it."}
+  }
+};
+function breakIn(target){
+  const source = Object.keys(state.wonders).find(k=>state.wonders[k] && k!==target);
+  if(!source || !BREAKIN_SCENES[source] || !BREAKIN_SCENES[source][target]) return false;
+  state.breakIns[target] = source;
+  const sc = BREAKIN_SCENES[source][target];
+  playFanfare(); refreshHud();
+  showModal(sc.title, sc.body + "<br><br><span class='small'>Break-in logged in the Civilizations book.</span>", [{text:"In and out",cls:"gold"}], CIVILIZATIONS[target].winScene);
+  return true;
+}
+
+/* --- Kingship makes the other tribes hostile (light, funny, low-stakes) --- */
+function triggerCivAggro(){
+  state.flags.aggroCooldown = Date.now() + 120000;
+  if(state.mapKey==="sequim" && isKingOfAny() && !isKing("sequim")){
+    state.gas = Math.max(0, state.gas-3); refreshHud();
+    showModal("GET OFF MY YARD","A golf cart comes out of nowhere, security light spinning, a retiree at the wheel who has clearly been briefed on you by name. \"I KNOW WHAT YOU ARE,\" he bellows, and chases you a solid three blocks before the cart's governor caps out at nine miles an hour. You burn a little gas making distance you didn't strictly need to make.<br><br><span class='small'>-3 gas — the price of infamy</span>",[{text:"Worth it",cls:"gold"}]);
+    return true;
+  }
+  if(state.mapKey==="porttownsend" && isKingOfAny() && !isKing("porttownsend")){
+    showModal("A SOFT DIG","Someone outside Aldrich's clocks you, leans to a friend, and says \"...<i>boomer</i>,\" not quite under their breath. A second one gives you a slow, ironic clap. The hippie establishment has, it seems, formally taken a position on you.",[{text:"Rude",cls:"gold"}]);
+    return true;
+  }
+  if(state.mapKey==="pawaterfront" && isKingOfAny() && !isKing("hick")){
+    showModal("NOT FROM HERE","A couple of guys by the mill site give you the slow up-and-down that says they know you're not west-end, whatever you managed to pull off in whatever town gave you that crown. Nobody says anything. Out here, nobody has to.",[{text:"Fair",cls:"gold"}]);
+    return true;
+  }
+  return false;
+}
+
+/* ---------- Memory book ---------- */
+const MEMORY_ITEMS = [
+  {label:"Met your ride-along at Taco Bell", check:()=>state.companion.joined},
+  {label:"Bought your first record at Quimper Sound", check:()=>state.records>=1},
+  {label:"Won a round of hacky sack", check:()=>!!state.flags.hackySackWon},
+  {label:"Sat at the end of the pier", check:()=>!!state.flags.pierVisited},
+  {label:"Wandered Chetzemoka Park", check:()=>!!state.flags.chetzemokaVisited},
+  {label:"Caught a show at the Legion Hall", check:()=>(state.concert.legionVisits||0)>=1},
+  {label:"Camped or hiked Fort Worden", check:()=>!!state.flags.fortWordenVisited},
+  {label:"Drove out to Lake Crescent", check:()=>!!state.flags.lakeCrescentVisited},
+  {label:"Hung out on the PA waterfront", check:()=>!!state.flags.paPierVisited},
+  {label:"Survived the pool (or didn't)", check:()=>!!state.flags.poolVisited},
+  {label:"Diane bailed you out", check:()=>!!state.flags.lucasMomBonus || !!state.flags.dianeErrand},
+  {label:"Someone got a surprise job", check:()=>!!state.jobs.given},
+  {label:"Met Steph", check:()=>(state.flags.steph||0)>=1},
+  {label:"Met Anina", check:()=>(state.flags.anina||0)>=1},
+  {label:"Met Tara", check:()=>(state.flags.tara||0)>=1},
+  {label:"Got mixed up with Gino somehow", check:()=>(state.flags.gino||0)>=1},
+  {label:"Met the Waterfront Pizza waitress", check:()=>(state.flags.waitress||0)>=1},
+  {label:"Survived a lecture (donut cushion included)", check:()=>!!state.flags.classroomVisited},
+  {label:"Counted seagulls at the pier", check:()=>(state.flags.seagullBest||0)>0},
+  {label:"Piloted the ferry through Puget Sound", check:()=>(state.flags.ferryGameBest||0)>0},
+  {label:"Found something strange at the lavender farm", check:()=>!!state.flags.foundLavender},
+  {label:"Witnessed the kinetic race chaos", check:()=>!!state.flags.kineticRaceSeen},
+  {label:"Walked the old Rainier mill site", check:()=>!!state.flags.millSiteVisited},
+  {label:"Hung out with Carly", check:()=>!!state.flags.carlyBallTouched},
+  {label:"Ran into Ryan doing Ryan things", check:()=>!!state.flags.metRyan},
+  {label:"Had a dream that didn't make sense yet", check:()=>!!state.flags.laurenDream},
+  {label:"Daydreamed about running the ferry", check:()=>!!state.flags.ferryDaydream},
+  {label:"Made it to a Seattle show", check:()=>!!state.concert.seattleAttended},
+  {label:"Graduated and got off the peninsula", check:()=>!!state.flags.graduated},
+  {label:"Made it to the Gorge", check:()=>!!state.concert.gorgeAttended}
+];
+function renderMoments(){
+  const done = MEMORY_ITEMS.filter(it=>it.check()).length;
+  const pct = Math.round((done/MEMORY_ITEMS.length)*100);
+  const header = `<div class="memRow" style="border-bottom:2px solid #9a927a;margin-bottom:6px;padding-bottom:8px;"><span style="font-family:'Press Start 2P';font-size:11px;color:var(--forest);">${done}/${MEMORY_ITEMS.length} — ${pct}%</span></div>`;
+  return header + MEMORY_ITEMS.map(it=>{
+    const d = it.check();
+    return `<div class="memRow"><span class="memMark" style="color:${d?"var(--forest)":"#c9c2ac"};">${d?"■":"□"}</span><span style="${d?"":"color:#a89f82;"}">${it.label}</span></div>`;
+  }).join("");
+}
+function renderMixtape(){
+  if(state.recordTitles.length===0) return `<p class="small">Nothing bought yet. Quimper Sound's used bins are calling.</p>`;
+  return state.recordTitles.map(t=>`<div class="memRow"><span class="memMark" style="color:var(--forest);">♪</span><span>${t}</span></div>`).join("");
+}
+function renderCrushes(){
+  const crushes = [
+    {name:"Steph", flag:"steph"},
+    {name:"Anina", flag:"anina"},
+    {name:"Tara", flag:"tara"},
+    {name:"The Waitress", flag:"waitress"}
+  ];
+  const labels = ["Not met","Met","Angsty crush","Resolved (somehow)"];
+  return crushes.map(c=>{
+    const stage = Math.min(state.flags[c.flag]||0, 3);
+    return `<div class="memRow"><span style="min-width:100px;display:inline-block;">${c.name}</span><span class="small">${labels[stage]}</span></div>`;
+  }).join("");
+}
+function renderSpending(){
+  const s = state.spending;
+  const rows = [["Gas",s.gas],["Pizza",s.pizza],["Records",s.records],["Legion Hall",s.legion],["Other",s.misc]];
+  const total = rows.reduce((a,[,v])=>a+v,0);
+  let html = rows.map(([label,val])=>`<div class="memRow"><span style="min-width:110px;display:inline-block;">${label}</span><span>${val}◉</span></div>`).join("");
+  html += `<div class="memRow" style="border-top:2px solid #9a927a;margin-top:4px;padding-top:6px;"><span style="min-width:110px;display:inline-block;">Total spent</span><span>${total}◉</span></div>`;
+  html += `<div class="memRow"><span style="min-width:110px;display:inline-block;">Total earned</span><span>${state.totalQuartersEver}◉</span></div>`;
+  return html;
+}
+function renderCiv(){
+  const order = ["sequim","porttownsend","hick"];
+  let html = `<p class="small" style="margin-bottom:8px;">Every spot you hit pulls you deeper into one of the peninsula's three tribes. Get about two-thirds of the way in and that tribe's Wonder opens up — a one-time capstone you can go set off.</p>`;
+  order.forEach(key=>{
+    const civ = CIVILIZATIONS[key];
+    const pct = civPct(key), count=civCount(key), total=civTotal(key);
+    const won = civWon(key), king = isKing(key);
+    const brokeInto = state.breakIns[key];
+    let status;
+    if(king) status = `👑 ${civ.title}. The Wonder is yours.`;
+    else if(won) status = `✨ Wonder unlocked: "${civ.wonderName}" — go set it off.`;
+    else status = `${count}/${total} spots — ${civ.wonderName} still locked.`;
+    const barColor = king ? "#B5482F" : "#1F3B2C";
+    html += `<div style="border-bottom:1px solid rgba(0,0,0,.12);padding:7px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Press Start 2P';font-size:11px;color:var(--forest);">${pct}% ${civ.adjective}</span><span>${king?"👑":won?"✨":""}</span></div>
+      <div style="height:9px;background:#d9cfae;border:1px solid #9a927a;margin:5px 0;"><div style="height:100%;width:${pct}%;background:${barColor};"></div></div>
+      <span class="small">${status}</span>`;
+    if(brokeInto) html += `<br><span class="small">🗝️ You broke in here as ${CIVILIZATIONS[brokeInto].adjective} royalty.</span>`;
+    html += `</div>`;
+  });
+  if(isKingOfAny()){
+    html += `<p class="small" style="margin-top:8px;">You wear a crown now. The other two tribes want you gone — <i>and</i> you can now <b>break into</b> their Wonders as an outsider. Try the other Wonder sites: the pool, the race, the trebuchet.</p>`;
+  }
+  return html;
+}
+const MEM_PANES = {moments:"memPaneMoments", mixtape:"memPaneMixtape", crushes:"memPaneCrushes", civ:"memPaneCiv", spending:"memPaneSpending"};
+function openMemoryBook(){
+  document.getElementById("memPaneMoments").innerHTML = renderMoments();
+  document.getElementById("memPaneMixtape").innerHTML = renderMixtape();
+  document.getElementById("memPaneCrushes").innerHTML = renderCrushes();
+  document.getElementById("memPaneCiv").innerHTML = renderCiv();
+  document.getElementById("memPaneSpending").innerHTML = renderSpending();
+  const ready = canGraduate();
+  const cVisits = state.flags.classroomVisits||0;
+  const shows = totalShowsAttended();
+  const gradBtn = document.getElementById("graduationBtn");
+  gradBtn.disabled = !ready;
+  document.getElementById("graduationProgress").textContent = ready
+    ? "🎓 Graduation is on the table — how you get off this peninsula is your call."
+    : `Study 4x at Peninsula College (${cVisits}/4), catch 5 shows total (${shows}/5), OR become champion of any one civilization to unlock graduation.`;
+  state.paused = true;
+  document.getElementById("memoryOverlay").classList.remove("hidden");
+}
+document.querySelectorAll(".memTabBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".memTabBtn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    Object.values(MEM_PANES).forEach(id=>document.getElementById(id).classList.add("hidden"));
+    document.getElementById(MEM_PANES[btn.dataset.tab]).classList.remove("hidden");
+  });
+});
+document.getElementById("memCloseBtn").addEventListener("click", ()=>{
+  state.paused = false;
+  document.getElementById("memoryOverlay").classList.add("hidden");
+});
+document.getElementById("memoryBtn").addEventListener("click", openMemoryBook);
+
+/* ---------- Win ---------- */
+function attendBigShow(type, free){
+  if(!free){
+    const cost = type==="gorge" ? GORGE_COST : SEATTLE_COST;
+    state.quarters -= cost;
+    state.concert.windowType = null;
+  }
+  if(type==="gorge") state.concert.gorgeAttended = true; else state.concert.seattleAttended = true;
+  refreshHud();
+  const buddy = charName(otherCharacter());
+  const venueKey = type==="gorge" ? "gorge" : "showbox";
+  const opener = pick(OPENER_BANTER[venueKey]).replace("{buddy}", buddy);
+  switchMusic(CONCERT_MELODY, "square", 0.08);
+  playFanfare();
+  const backToAmbient = ()=> switchMusic(MELODY, "triangle", 0.05);
+  let txt = opener + "<br><br>";
+  if(type==="gorge"){
+    txt += `Then the main act. The Gorge. You almost can't believe you actually made it — ${buddy} losing it beside you as the sun goes down over the amphitheater.<br><br><span class='small'>Logged in the memory book. The window's closed, but there'll be another one eventually.</span>`;
+  } else {
+    txt += `Then the main act. You and ${buddy} caught the ferry into Seattle and found the show right where you heard it'd be — the Showbox, packed, loud, exactly what you drove all that way for.<br><br><span class='small'>Logged in the memory book. The window's closed, but there'll be another one eventually.</span>`;
+  }
+  showModal(type==="gorge" ? "THE GORGE" : "THE SHOWBOX", txt, [{text:"Unreal",cls:"gold",onClick:backToAmbient}], venueKey);
+}
+function endSummer(){
+  state.paused = true;
+  const buddy = charName(otherCharacter());
+  let heading, flavor, sceneKey;
+  if(state.concert.gorgeAttended){
+    heading = "END OF THE SUMMER"; sceneKey = "gorge";
+    flavor = `The Gorge happened. Everything since has just been a victory lap with ${buddy}.`;
+  } else if(state.concert.seattleAttended){
+    heading = "END OF THE SUMMER"; sceneKey = "showbox";
+    flavor = `Seattle happened. The Gorge is still out there for next time.`;
+  } else {
+    heading = "END OF THE SUMMER"; sceneKey = "lakecrescent";
+    flavor = `No big show this time — just a summer of driving around with ${buddy}, which was sort of the whole point anyway.`;
+  }
+  const txt = `${flavor}<br><br><span class="small">Quarters collected: ${state.totalQuartersEver} · Records bought: ${state.records} · Pizza slices: ${state.pizza} · Legion Hall shows: ${state.concert.legionVisits||0}</span>`;
+  document.getElementById("winText").innerHTML = txt;
+  document.querySelector("#winScreen h2").textContent = heading;
+  switchMusic(CONCERT_MELODY, "square", 0.07);
+  drawSceneImage(document.getElementById("winScene"), sceneKey);
+  document.getElementById("winScreen").classList.remove("hidden");
+}
+function totalShowsAttended(){
+  return (state.concert.legionVisits||0) + (state.concert.seattleAttended?1:0) + (state.concert.gorgeAttended?1:0);
+}
+function canGraduate(){
+  return (state.flags.classroomVisits||0) >= 4 || totalShowsAttended() >= 5 || isKingOfAny();
+}
+function graduationDay(){
+  if(!canGraduate()) return;
+  state.paused = true;
+  state.flags.graduated = true;
+  const buddy = charName(otherCharacter());
+  const viaSchool = (state.flags.classroomVisits||0) >= 4;
+  const kingCiv = firstKingCiv();
+
+  let heading, flavor, sceneKey;
+
+  if(viaSchool){
+    // Path 1 — the real Peninsula College ceremony. Triumphant, a genuine sense of occasion.
+    heading = "GRADUATION DAY"; sceneKey = "graduation";
+    flavor = `Cap and gown over jeans you weren't going to bother changing out of. An actual diploma, allegedly earned somewhere between the donut cushion and the salmon lectures. Diane cries more than your own mother does. Ryan almost gets thrown out of the ceremony over the foghorn — nobody's sure how he snuck it in. Afterward you throw everything you own into the car, ${buddy} riding shotgun same as always, and drive for the terminal, ready to get the hell off the peninsula and see what's actually out there.`;
+  } else if(kingCiv){
+    // Path 3 — you didn't so much graduate as get crowned. Legend-of-one-town energy.
+    heading = "CROWNED, THEN GONE"; sceneKey = CIVILIZATIONS[kingCiv].winScene;
+    const title = CIVILIZATIONS[kingCiv].title;
+    const legend = {
+      sequim: "The pool never really recovered. Neither did the security guard.",
+      porttownsend: "They still tell the story of the race at Aldrich's, mostly wrong, always fondly.",
+      hick: "The trebuchet's a local landmark now, in the way condemned things sometimes are."
+    }[kingCiv];
+    flavor = `No cap, no gown, no stage — you skipped the ceremony entirely, because ${title} doesn't walk, ${title} arrives. ${legend} There's no diploma in this version, just a reputation you can't put on a résumé and a couple of towns that will never look at you the same way. ${buddy} loads the car while you take one last unbothered lap. Then you drive for the terminal like you own the road, which, briefly, in one specific corner of the peninsula, you sort of did.`;
+  } else {
+    // Path 2 — "School of Life." No ceremony. Deflated-but-cool. Nobody claps, and that's fine.
+    heading = "SCHOOL OF LIFE"; sceneKey = "graduation";
+    flavor = `There's no ceremony. There was never going to be a ceremony. Five shows and a summer of driving is not a thing they hand you a diploma for, and your parents make sure you know it — that particular quiet at the kitchen table, the one that isn't quite yelling. Nobody walks a stage. Nobody claps. That's fine. You weren't in it for the clapping. You throw your stuff in the car, ${buddy} already in the passenger seat, and point it at the ferry terminal. A degree in the School of Life, self-conferred, notarized by absolutely nobody. Somehow it still counts. It has to.`;
+  }
+
+  const txt = `${flavor}<br><br><span class="small">Quarters collected: ${state.totalQuartersEver} · Records bought: ${state.records} · Pizza slices: ${state.pizza} · Legion Hall shows: ${state.concert.legionVisits||0} · Trips taken: ${state.tripCount}</span>`;
+  document.getElementById("winText").innerHTML = txt;
+  document.querySelector("#winScreen h2").textContent = heading;
+  switchMusic(CONCERT_MELODY, "square", 0.07);
+  drawSceneImage(document.getElementById("winScene"), sceneKey);
+  document.getElementById("winScreen").classList.remove("hidden");
+}
+document.getElementById("restartBtn").addEventListener("click", ()=>{ clearSave(); location.reload(); });
+
+/* ---------- Input ---------- */
+const keyMap = {ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",
+  w:"up",s:"down",a:"left",d:"right",W:"up",S:"down",A:"left",D:"right"};
+window.addEventListener("keydown", e=>{
+  if(keyMap[e.key]){ state.keys[keyMap[e.key]] = true; e.preventDefault(); }
+  if(e.code==="Space"){ hackyHit(); e.preventDefault(); }
+});
+window.addEventListener("keyup", e=>{
+  if(keyMap[e.key]){ state.keys[keyMap[e.key]] = false; e.preventDefault(); }
+});
+document.querySelectorAll(".dbtn[data-dir]").forEach(btn=>{
+  const dir = btn.dataset.dir;
+  const on = ev=>{ state.keys[dir]=true; ev.preventDefault(); };
+  const off = ev=>{ state.keys[dir]=false; ev.preventDefault(); };
+  btn.addEventListener("touchstart",on); btn.addEventListener("touchend",off);
+  btn.addEventListener("mousedown",on); btn.addEventListener("mouseup",off);
+  btn.addEventListener("mouseleave",off);
+});
+
+function canvasPoint(clientX,clientY){
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+  return { x:(clientX-rect.left)*scaleX, y:(clientY-rect.top)*scaleY };
+}
+function dragStart(clientX,clientY){
+  if(state.paused) return;
+  state.dragging = true;
+  state.dragTarget = canvasPoint(clientX,clientY);
+}
+function dragMove(clientX,clientY){
+  if(!state.dragging) return;
+  state.dragTarget = canvasPoint(clientX,clientY);
+}
+function dragEnd(){
+  state.dragging = false;
+  state.dragTarget = null;
+}
+canvas.addEventListener("touchstart", e=>{ const t=e.touches[0]; dragStart(t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+canvas.addEventListener("touchmove", e=>{ const t=e.touches[0]; dragMove(t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+canvas.addEventListener("touchend", dragEnd);
+canvas.addEventListener("touchcancel", dragEnd);
+canvas.addEventListener("mousedown", e=>{ dragStart(e.clientX,e.clientY); });
+canvas.addEventListener("mousemove", e=>{ dragMove(e.clientX,e.clientY); });
+window.addEventListener("mouseup", dragEnd);
+
+/* ---------- Title screen ---------- */
+function drawMiniChar(canvasEl,pal){
+  const c = canvasEl.getContext("2d");
+  c.clearRect(0,0,32,32);
+  c.save(); c.translate(16,26);
+  c.fillStyle=pal.pants; c.fillRect(-6,2,5,8); c.fillRect(1,2,5,8);
+  c.fillStyle=pal.shirt; c.fillRect(-7,-7,14,10);
+  c.fillStyle=pal.skin; c.fillRect(-5,-15,10,9);
+  c.fillStyle=pal.hair; c.fillRect(-6,-17,12,5);
+  if(pal.accessory==="beret"){ c.fillStyle="#b5482f"; c.beginPath(); c.ellipse(0,-18,7,4,0,0,7); c.fill(); }
+  c.restore();
+}
+drawMiniChar(document.querySelector("#pickJesse canvas"), PALETTE.jesse);
+drawMiniChar(document.querySelector("#pickLucas canvas"), PALETTE.lucas);
+
+document.getElementById("pickJesse").onclick = ()=>{
+  state.character="jesse";
+  document.getElementById("pickJesse").classList.add("selected");
+  document.getElementById("pickLucas").classList.remove("selected");
+};
+document.getElementById("pickLucas").onclick = ()=>{
+  state.character="lucas";
+  document.getElementById("pickLucas").classList.add("selected");
+  document.getElementById("pickJesse").classList.remove("selected");
+};
+function showTempHint(html,delay){
+  const hint = document.getElementById("introHint");
+  hint.querySelector(".box").innerHTML = html;
+  hint.classList.remove("hidden","fadeOutHint");
+  clearTimeout(hint._fadeTimer);
+  hint._fadeTimer = setTimeout(()=>{
+    hint.classList.add("fadeOutHint");
+    setTimeout(()=>hint.classList.add("hidden"),1000);
+  }, delay||4500);
+}
+document.getElementById("startBtn").onclick = ()=>{
+  if(state.character==="lucas"){
+    state.mapKey = "sequim";
+    state.px = 13.5*TILE; state.py = 1.5*TILE;
+  } else {
+    state.mapKey = "lostmountain";
+    state.px = 3.5*TILE; state.py = 3.5*TILE;
+    enterLostMountain();
+  }
+  updateSidekickButtons();
+  document.getElementById("locLabel").textContent = mapDef().label;
+  document.getElementById("titleScreen").classList.add("hidden");
+  document.getElementById("civBadge").classList.remove("hidden");
+  state.paused = false;
+  state.gameStarted = true;
+  refreshHud();
+  ensureAudio();
+  startMusic();
+
+  showTempHint("Arrows / WASD, the pad below, or drag on the screen to move.<br>Walk onto a glowing spot to check it out.", 4500);
+};
+
+/* ---------- Orientation screen + restart ---------- */
+document.getElementById("orientNewBtn").addEventListener("click", ()=>{
+  document.getElementById("orientationScreen").classList.add("hidden");
+  document.getElementById("titleScreen").classList.remove("hidden");
+});
+document.getElementById("resetProgressBtn").addEventListener("click", ()=>{
+  if(confirm("Restart from the beginning? You'll lose everything from this playthrough.")){
+    clearSave();
+    location.reload();
+  }
+});
+document.getElementById("endSummerBtn").addEventListener("click", ()=>{
+  document.getElementById("memoryOverlay").classList.add("hidden");
+  endSummer();
+});
+document.getElementById("graduationBtn").addEventListener("click", ()=>{
+  document.getElementById("memoryOverlay").classList.add("hidden");
+  graduationDay();
+});
+
+/* ---------- Persistence (localStorage — works in a normal browser tab) ---------- */
+const SAVE_KEY = "sequimming_save_v1";
+let lastSaveTime = 0;
+function saveGame(force){
+  if(!state.gameStarted) return;
+  const now = Date.now();
+  if(!force && now-lastSaveTime < 1200) return;
+  lastSaveTime = now;
+  try{
+    const maps = {};
+    Object.keys(MAPS).forEach(k=>{ maps[k] = MAPS[k].rows.slice(); });
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v:1, state, maps }));
+  }catch(e){ /* private mode / quota — just don't persist */ }
+}
+function clearSave(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+}
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || data.v!==1 || !data.state || !data.maps) return null;
+    return data;
+  }catch(e){ return null; }
+}
+function resumeGame(data){
+  // restore mutated maps (consumed quarters, etc.)
+  Object.keys(data.maps).forEach(k=>{ if(MAPS[k]) MAPS[k].rows = data.maps[k]; });
+  // restore state field-by-field (state is referenced everywhere — mutate in place)
+  Object.keys(data.state).forEach(k=>{ state[k] = data.state[k]; });
+  // sanitize transient bits so we never resume frozen or mid-drag
+  state.paused = false;
+  state.dragging = false; state.dragTarget = null; state.isMoving = false;
+  state.keys = {up:false,down:false,left:false,right:false};
+  state.gameStarted = true;
+  document.getElementById("orientationScreen").classList.add("hidden");
+  document.getElementById("titleScreen").classList.add("hidden");
+  document.getElementById("civBadge").classList.remove("hidden");
+  updateSidekickButtons();
+  document.getElementById("locLabel").textContent = mapDef().label;
+  refreshHud();
+  startMusic();
+  // audio can't start without a gesture on auto-resume; resume it on the first one
+  const kick = ()=>{ ensureAudio(); window.removeEventListener("pointerdown",kick); window.removeEventListener("keydown",kick); };
+  window.addEventListener("pointerdown", kick);
+  window.addEventListener("keydown", kick);
+}
+
+/* ---------- Main loop ---------- */
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+state.paused = true;
+const __save = loadSave();
+if(__save){
+  resumeGame(__save);
+} else {
+  refreshHud();
+}
+loop();
+
+})();
+</script>
+</body>
+</html>
