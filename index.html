@@ -214,6 +214,12 @@
   .ferryObstacle{position:absolute;top:-34px;font-size:27px;transform:translateX(-50%);user-select:none;will-change:top;}
   #ferryBg{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none;}
 
+  /* driving-between-towns interstitial */
+  #driveOverlay{cursor:pointer;}
+  #driveLabel{color:var(--gold);font-size:12px;letter-spacing:1px;margin-bottom:10px;text-shadow:2px 2px 0 #000;text-align:center;padding:0 10px;}
+  #driveCanvas{width:92%;max-width:520px;aspect-ratio:8/5;height:auto;image-rendering:pixelated;border:3px solid var(--gold);border-radius:4px;background:#a9d0e8;}
+  #driveSkip{color:#b9c9b6;font-size:14px;margin-top:10px;}
+
   /* Play Catch with Carly */
   #catchTaunt{
     font-size:17px;color:#173a12;min-height:44px;line-height:1.2;margin:2px 0 6px;
@@ -357,6 +363,13 @@
       </div>
     </div>
 
+    <!-- Driving-between-towns interstitial -->
+    <div id="driveOverlay" class="overlay hidden" style="flex-direction:column;background:#0c150e;padding:0;">
+      <div id="driveLabel" class="pixel">— → —</div>
+      <canvas id="driveCanvas" width="480" height="300"></canvas>
+      <div id="driveSkip">tap to skip ▸</div>
+    </div>
+
     <!-- Play Catch with Carly -->
     <div id="catchOverlay" class="overlay hidden">
       <div class="card" style="text-align:center;">
@@ -378,15 +391,15 @@
     </div>
 
     <!-- Purple Haze dream / teleport -->
-    <div id="dreamOverlay" class="overlay hidden" style="background:radial-gradient(circle,#6a3f8a,#241531 75%);">
-      <div class="card" style="max-width:460px;text-align:center;background:#f1e9d2;max-height:88vh;overflow:auto;">
-        <h2 style="color:#6a3f8a;">???</h2>
-        <p class="small" id="dreamSubtitle">The lavender's doing something. Where to?</p>
-        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:8px;">Key Locations</div>
+    <div id="dreamOverlay" class="overlay hidden" style="background:radial-gradient(circle,#7a4f9a,#241531 78%);">
+      <div class="card" style="max-width:460px;text-align:center;background:linear-gradient(180deg,#f3ecdd,#eadcf0);max-height:88vh;overflow:auto;border:2px solid #9a6fb8;">
+        <h2 style="color:#6a3f8a;letter-spacing:3px;">🪻 P U R P L E&nbsp;&nbsp;H A Z E 🪻</h2>
+        <p class="small" id="dreamSubtitle" style="font-style:italic;">The lavender's doing something. Where to?</p>
+        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:8px;">✦ Drift somewhere</div>
         <div id="dreamGridLocations" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;"></div>
-        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:6px;">Special Spots &amp; Games</div>
+        <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:6px;">✦ Odds &amp; ends</div>
         <div id="dreamGridSpecial" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;"></div>
-        <button class="btn rust pixel" id="wakeUpBtn" style="font-size:13px;">WAKE UP</button>
+        <button class="btn rust pixel" id="wakeUpBtn" style="font-size:13px;">☁️ WAKE UP</button>
       </div>
     </div>
     <div id="smokePuff" class="hidden" style="position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);font-size:70px;">💨</div>
@@ -3134,6 +3147,11 @@ function playScene(id,cost){
 function travelTo(dest,cost){
   state.gas -= cost;
   state.tripCount++;
+  const fromLabel = mapDef().label;
+  const toLabel = (MAPS[dest] && MAPS[dest].label) || dest;
+  playDriveAnimation(fromLabel, toLabel, dest, ()=>doArrival(dest));
+}
+function doArrival(dest){
   state.mapKey = dest;
   const sp = ENTRY_SPAWN[dest];
   state.px = sp.x*TILE; state.py = sp.y*TILE;
@@ -3157,6 +3175,116 @@ function travelTo(dest,cost){
   if(jobSurpriseCheck()) return;
   if(advanceConcertWindow()) return;
   concertWindowCheck();
+}
+/* ---------- The short drive between towns: 101, trees, water, islands sliding by ---------- */
+let driveAnim = null;
+function playDriveAnimation(fromLabel, toLabel, dest, done){
+  const ov = document.getElementById("driveOverlay");
+  const cv = document.getElementById("driveCanvas");
+  document.getElementById("driveLabel").textContent = `${fromLabel}  →  ${toLabel}`;
+  ov.classList.remove("hidden");
+  state.paused = true;
+  const c = cv.getContext("2d"); c.imageSmoothingEnabled = false;
+  const DUR = 1500, start = Date.now();
+  // does this leg hug the water? (ferry-town legs get a shoreline)
+  const coastal = dest==="porttownsend" || dest==="pawaterfront" || fromLabel==="Port Townsend" || fromLabel==="PA Waterfront";
+  let finished = false, raf = null;
+  const finish = ()=>{
+    if(finished) return; finished = true;
+    if(raf) cancelAnimationFrame(raf);
+    ov.onclick = null;
+    ov.classList.add("hidden");
+    state.paused = false;
+    done();
+  };
+  function frame(){
+    const t = Date.now() - start;
+    drawDriveScene(c, cv.width, cv.height, t, coastal);
+    if(t >= DUR){ finish(); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  ov.onclick = finish;
+  frame();
+}
+function drawDriveScene(c, W, H, t, coastal){
+  const scroll = t * 0.5;
+  // sky
+  const g = c.createLinearGradient(0,0,0,H*0.6);
+  g.addColorStop(0,"#a9d0e8"); g.addColorStop(1,"#dff0ea");
+  c.fillStyle = g; c.fillRect(0,0,W,H);
+  // distant Olympics / peninsula ridge (slow parallax)
+  c.fillStyle = "#6b7f8c";
+  const r1 = (scroll*0.12) % (W+120);
+  for(let base=-r1; base<W+60; base+=110){
+    c.beginPath(); c.moveTo(base,H*0.5); c.lineTo(base+55,H*0.28); c.lineTo(base+110,H*0.5); c.closePath(); c.fill();
+  }
+  c.fillStyle="#e8edf0"; // snowcaps
+  const r1b=(scroll*0.12)%(W+120);
+  for(let base=-r1b; base<W+60; base+=110){ c.beginPath(); c.moveTo(base+47,H*0.335); c.lineTo(base+55,H*0.28); c.lineTo(base+63,H*0.335); c.closePath(); c.fill(); }
+  if(coastal){
+    // a strip of water with little islands sliding by (medium parallax)
+    c.fillStyle = "#3e7c9a"; c.fillRect(0,H*0.5,W,H*0.16);
+    c.fillStyle = "#3a6b46";
+    const r2 = (scroll*0.4) % (W+160);
+    for(let base=-r2; base<W+80; base+=150){
+      c.beginPath(); c.ellipse(base+30,H*0.57,18,5,0,0,7); c.fill();
+      c.beginPath(); c.ellipse(base+95,H*0.55,10,4,0,0,7); c.fill();
+    }
+    c.strokeStyle="rgba(255,255,255,.25)"; c.lineWidth=1;
+    c.beginPath(); c.moveTo(0,H*0.63); c.lineTo(W,H*0.63); c.stroke();
+    c.fillStyle="#3f6a3f"; c.fillRect(0,H*0.66,W,H*0.06); // near shore grass
+  } else {
+    c.fillStyle="#3f6a3f"; c.fillRect(0,H*0.5,W,H*0.22); // fields
+  }
+  // roadside trees (fast parallax)
+  const r3 = (scroll*1.0) % 90;
+  for(let base=-r3; base<W+40; base+=90){
+    c.fillStyle="#20402a"; c.fillRect(base+16,H*0.58,5,H*0.16);
+    c.fillStyle="#2f5c38"; c.beginPath(); c.moveTo(base+3,H*0.62); c.lineTo(base+18,H*0.4); c.lineTo(base+33,H*0.62); c.closePath(); c.fill();
+    c.fillStyle="#3f7048"; c.beginPath(); c.moveTo(base+7,H*0.56); c.lineTo(base+18,H*0.44); c.lineTo(base+29,H*0.56); c.closePath(); c.fill();
+  }
+  // the road
+  c.fillStyle="#464a4e"; c.fillRect(0,H*0.72,W,H*0.28);
+  c.fillStyle="#3a3d40"; c.fillRect(0,H*0.72,W,4);
+  // dashed centerline scrolling
+  c.fillStyle="#e8b94a";
+  const dash = (scroll*2.2) % 64;
+  for(let x=-64; x<W+64; x+=64){ c.fillRect(x - dash + 64, H*0.855, 32, 5); }
+  // roadside grass fringe
+  c.fillStyle="#3f6a3f"; c.fillRect(0,H*0.72,W,3);
+  // the beat-up car, side view, bobbing over the potholes
+  const bob = Math.sin(t/70)*2.2;
+  drawSideCar(c, W*0.40, H*0.78 + bob, t);
+  // a couple of gulls
+  c.strokeStyle="#fff"; c.lineWidth=2;
+  const gx=(W - (scroll*0.5)%(W+40));
+  [[gx,H*0.16],[gx+30,H*0.12]].forEach(([x,y])=>{ c.beginPath(); c.moveTo(x-6,y); c.quadraticCurveTo(x,y-5,x+6,y); c.stroke(); });
+}
+function drawSideCar(c, x, y, t){
+  const sp = Math.sin(t/40)*0.6; // tiny rattle
+  c.save(); c.translate(x, y+sp);
+  // shadow
+  c.fillStyle="rgba(0,0,0,.25)"; c.beginPath(); c.ellipse(0,20,34,5,0,0,7); c.fill();
+  // body (a tired little hatchback)
+  c.fillStyle="#c23a2f"; c.fillRect(-34,-4,66,18);
+  c.fillStyle="#a82f26"; c.fillRect(-34,10,66,4);
+  // cabin
+  c.fillStyle="#c23a2f"; c.beginPath(); c.moveTo(-22,-4); c.lineTo(-14,-20); c.lineTo(18,-20); c.lineTo(26,-4); c.closePath(); c.fill();
+  // windows
+  c.fillStyle="#8fb8cc"; c.beginPath(); c.moveTo(-18,-6); c.lineTo(-12,-17); c.lineTo(-1,-17); c.lineTo(-1,-6); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(2,-6); c.lineTo(2,-17); c.lineTo(15,-17); c.lineTo(21,-6); c.closePath(); c.fill();
+  // headlight + taillight
+  c.fillStyle="#f4e9c8"; c.fillRect(30,0,4,5);
+  c.fillStyle="#e8b94a"; c.fillRect(-34,0,3,5);
+  // wheels (spinning spokes)
+  c.fillStyle="#1a1a1a"; c.beginPath(); c.arc(-20,15,8,0,7); c.arc(20,15,8,0,7); c.fill();
+  c.strokeStyle="#555"; c.lineWidth=2;
+  const spin=(t/30);
+  [-20,20].forEach(wx=>{ for(let i=0;i<4;i++){ const a=spin+i*Math.PI/2; c.beginPath(); c.moveTo(wx,15); c.lineTo(wx+Math.cos(a)*7,15+Math.sin(a)*7); c.stroke(); } });
+  // a little exhaust puff
+  c.fillStyle="rgba(120,120,120,"+(0.3+0.2*Math.sin(t/120))+")";
+  c.beginPath(); c.arc(-38,10,4,0,7); c.arc(-44,9,3,0,7); c.fill();
+  c.restore();
 }
 // The soft summer clock: at the end, a gentle nudge to pick a way out. No hard stop.
 function checkSummerEnd(){
