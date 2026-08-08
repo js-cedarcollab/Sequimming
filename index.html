@@ -321,17 +321,6 @@
       </div>
     </div>
 
-    <!-- Count the Seagulls -->
-    <div id="seagullOverlay" class="overlay hidden">
-      <div class="card" style="text-align:center;">
-        <h2>COUNT THE SEAGULLS</h2>
-        <p class="small">Tap them before they fly off. Don't ask why. Just count.</p>
-        <div id="seagullCountdown"></div>
-        <div class="tally">Count: <span id="seagullTally">0</span></div>
-        <div id="seagullField"></div>
-        <button class="btn smallBtn" id="seagullCancelBtn" style="margin-top:8px;">✕ Skip</button>
-      </div>
-    </div>
 
     <!-- Ferry Captain -->
     <div id="ferryOverlay" class="overlay hidden">
@@ -448,11 +437,11 @@ const LEGION_COST = 14, SEATTLE_COST = 38, GORGE_COST = 65;
 
 /* ---------- Maps ---------- */
 // # wall/tree   ~ water   C campus building (solid)
-// . grass   H Jesse house  L Lucas house  T Taco Bell  G gas station
+// . grass   H Jesse house  L Lucas house  G gas station
 // D downtown/flavor   V car (travel)   K Ryan's truck   X hacky sack lawn
 // Z pizza   R record store   W pier   F ferry dock   q quarter
 // a Rose Theater  b Silverwater Cafe  c Sirens Pub  e Chetzemoka Park  g Legion Hall
-// h Hurricane Coffee  i Grocery  j Dairy Queen  k Taco Time
+// i Sunny Farms country store
 // n Chickens  o Shooting range  p Camping spot  u The Pool
 // PA Waterfront: B bookseller  S shoe store  O cafes/restaurants  E waterfront trail
 //   P pier (zone)  Y Coho ferry dock (Victoria)  (K Ryan's parking lot, w deli, x mill here too)
@@ -479,14 +468,14 @@ const MAPS = {
     label: "Sequim",
     rows: [
       "################",
-      "#h.....##.....L#",
+      "#......##.....L#",
       "#..i.......u...#",
-      "#....T....G....#",
+      "#.........G....#",
       "#..............#",
       "#..q......q....#",
-      "#....####..j...#",
+      "#....####......#",
       "#....#..#..D...#",
-      "#....#..#..k...#",
+      "#....#..#......#",
       "#............V.#",
       "#..........z...#",
       "################",
@@ -628,7 +617,7 @@ const state = {
   recordTitles: [],
   jobs: { given:false, holder:null, place:null },
   concert: { windowType:null, windowTravelsLeft:0, gorgeCooldownTravels:0, legionVisits:0, seattleAttended:false, gorgeAttended:false, everOpened:false },
-  companion: { joined:false, visible:false, x:0, y:0, history:[] },
+  companion: { joined:true, visible:false, x:0, y:0, history:[] },
   carly: { x:0, y:0, history:[], visible:false, moving:false, appeared:false, away:false, justReturned:false, arriveTime:0 },
   ryanNPC: { present:false, x:0, y:0, targetX:0, targetY:0, wanderTimer:0 },
   trailTimer:0,
@@ -884,7 +873,7 @@ function drawTileBg(col,row,ch){
     case "e": drawBuilding(x,y,"#4a6a3a","#26401f",true,"🌳"); break;
     case "g": drawBuilding(x,y,"#8a7a4a","#4f4324",true,"🎸"); break;
     case "h": drawBuilding(x,y,"#4a3324","#2a1a12",true,"☕"); break;
-    case "i": drawBuilding(x,y,"#6a8a5a","#334a26",true,"🛒"); break;
+    case "i": drawBuilding(x,y,"#c06a3a","#7a3a20",true,"🌻"); break;
     case "j": drawBuilding(x,y,"#8a3a4a","#4f1f26",true,"🍦"); break;
     case "k": drawBuilding(x,y,"#c9843b","#7a4c1f",true,"🌮"); break;
     case "m": drawBuilding(x,y,"#7a6a52","#4a3f2f",true,"🎓"); break;
@@ -1103,6 +1092,41 @@ function drawSceneImage(canvasEl, key){
     // a couple of bees
     c.fillStyle="#e8b94a";
     c.beginPath(); c.arc(w*0.3,h*0.36,2,0,7); c.arc(w*0.62,h*0.3,2,0,7); c.fill();
+  } else if(key==="homefireplace"){
+    // the Lost Mountain house interior: reclaimed-wood walls, a wood fireplace, warm light
+    c.fillStyle="#3a2a1c"; c.fillRect(0,0,w,h);                 // dim room
+    // vertical reclaimed-wood plank wall
+    for(let x=0;x<w;x+=14){
+      c.fillStyle = (Math.floor(x/14)%2) ? "#5c4126" : "#6a4c2e";
+      c.fillRect(x,0,13,h*0.82);
+      c.fillStyle="rgba(0,0,0,.18)"; c.fillRect(x+12,0,2,h*0.82);
+    }
+    // floor
+    c.fillStyle="#3a2c1e"; c.fillRect(0,h*0.82,w,h*0.18);
+    // stone hearth + firebox, center
+    const fx=w*0.36, fw=w*0.28;
+    c.fillStyle="#7c756a"; c.fillRect(fx-8,h*0.2,fw+16,h*0.62);   // stone surround
+    c.fillStyle="#5a5148";
+    for(let sy=0.24; sy<0.8; sy+=0.1){ for(let sx=0; sx<fw+8; sx+=12){ c.fillRect(fx-6+sx+((Math.round(sy*10))%2?6:0), h*sy, 10, h*0.07); } }
+    c.fillStyle="#1a120c"; c.fillRect(fx,h*0.42,fw,h*0.36);       // firebox
+    // logs + fire
+    c.fillStyle="#4a3320"; c.fillRect(fx+6,h*0.70,fw-12,6);
+    const flick = 0;
+    c.fillStyle="#e8892a";
+    c.beginPath(); c.moveTo(fx+fw*0.5-10,h*0.72); c.quadraticCurveTo(fx+fw*0.5,h*0.5,fx+fw*0.5+10,h*0.72); c.closePath(); c.fill();
+    c.fillStyle="#f4c24a";
+    c.beginPath(); c.moveTo(fx+fw*0.5-5,h*0.72); c.quadraticCurveTo(fx+fw*0.5,h*0.58,fx+fw*0.5+5,h*0.72); c.closePath(); c.fill();
+    // warm glow
+    const gl=c.createRadialGradient(fx+fw*0.5,h*0.62,4,fx+fw*0.5,h*0.62,w*0.4);
+    gl.addColorStop(0,"rgba(255,180,80,.28)"); gl.addColorStop(1,"rgba(255,180,80,0)");
+    c.fillStyle=gl; c.fillRect(0,0,w,h);
+    // wood mantel + a couple of mantel odds and ends
+    c.fillStyle="#4a3320"; c.fillRect(fx-12,h*0.34,fw+24,7);
+    c.fillStyle="#b5482f"; c.fillRect(fx-4,h*0.27,6,7);          // a little jar/candle
+    c.fillStyle="#3a6a4a"; c.fillRect(fx+fw-4,h*0.26,5,8);
+    // a slouchy couch in the foreground corner
+    c.fillStyle="#43584a"; c.fillRect(0,h*0.72,w*0.2,h*0.2);
+    c.fillStyle="#38493d"; c.fillRect(0,h*0.68,w*0.2,8);
   } else if(key==="ferrydream"){
     const grad = c.createLinearGradient(0,0,0,h);
     grad.addColorStop(0,"#8ec9e8");
@@ -1676,9 +1700,6 @@ function update(){
   }
   if(!freeze) state.lastTileKey = activeKey;
 
-  if(state.mapKey==="sequim" && Date.now()>state.flags.momPopCooldown && Math.random()<0.0006){
-    triggerMomPopIn();
-  }
   if(state.mapKey==="lostmountain" && Date.now()>state.flags.carlyBallCooldown && Math.random()<0.0005){
     triggerCarlyBallHit();
   }
@@ -1710,11 +1731,11 @@ function floatText(txt,x,y){
 }
 
 function locName(ch){
-  return {H:"Home",L:"Lucas' House",T:"Taco Bell",G:"Gas Station",D:"Downtown",
+  return {H:"Home",L:"Lucas' House",G:"Gas Station",D:"Downtown",
     V:"Your Car",K:"Ryan's Truck",X:"Campus Lawn",C:"Campus Building",
     Z:"Waterfront Pizza",R:"Quimper Sound",W:"The Pier",F:"Ferry Dock",
     a:"Rose Theater", b:"Silverwater Cafe", c:"Sirens Pub", e:"Chetzemoka Park", g:"Legion Hall",
-    h:"Hurricane Coffee", i:"Grocery Store", j:"Dairy Queen", k:"Taco Time", m:"Classroom",
+    i:"Sunny Farms", m:"Classroom",
     n:"The Chickens", o:"Shooting Range", p:"Campsite", u:"The Pool", y:"A Softball", z:"Purple Haze Lavender",
     w:"Round the Clock Deli", x:"The Old Rainier Mill Site",
     B:"Port Book & News", S:"The Shoe Store", O:"Downtown PA", E:"The Waterfront Trail",
@@ -1730,7 +1751,6 @@ function handleSpecial(ch,col,row){
   switch(ch){
     case "H": openHome(); break;
     case "L": openLucasHouse(); break;
-    case "T": openTacoBell(); break;
     case "G": openGasStation(); break;
     case "D": openDowntown(); break;
     case "V": openTravel(); break;
@@ -1745,10 +1765,7 @@ function handleSpecial(ch,col,row){
     case "c": openSirens(); break;
     case "e": openChetzemoka(); break;
     case "g": openLegionHall(); break;
-    case "h": openHurricaneCoffee(); break;
-    case "i": openGrocery(); break;
-    case "j": openDairyQueen(); break;
-    case "k": openTacoTime(); break;
+    case "i": openSunnyFarms(); break;
     case "m": openClassroom(); break;
     case "n": openChickens(); break;
     case "o": openShootingRange(); break;
@@ -1828,22 +1845,6 @@ function triggerNinaChase(){
   }
   showModal("NINA'S LESABRE", body, [{text:playingLucas?"...worth it":"Poor guy",cls:"gold"}]);
 }
-function triggerMomPopIn(){
-  state.flags.momPopCooldown = Date.now() + 180000;
-  if(Math.random()<0.4){
-    state.flags.dianeErrand = true;
-    state.gas = Math.min(state.maxGas, state.gas+35);
-    gainQuarters(2);
-    refreshHud();
-    showModal("DIANE","Diane flags you down. \"Can you two run up to Port Townsend for me? Gas is on me — grab lunch too.\" She hands over more than you need.<br><br><span class='small'>+35 gas, +2 quarters</span>",[{text:"On it",cls:"gold"}]);
-  } else {
-    state.gas = Math.min(state.maxGas, state.gas+20);
-    gainQuarters(4);
-    refreshHud();
-    showModal("LUCAS' MOM","A car pulls up alongside you — it's Diane. \"You kids need gas money? And get a decent lunch, too.\" She presses some quarters into your hand before driving off.<br><br><span class='small'>+20 gas, +4 quarters</span>",[{text:"Thanks!",cls:"gold"}]);
-  }
-}
-
 /* ---------- Gino: the money way off the peninsula (implied, never on-screen criminal) ---------- */
 const GINO_FAVORS = [
   {
@@ -2024,7 +2025,6 @@ function getDreamSpecials(){
     {label:"Dungeness Spit", action:()=>{ closeDreamOverlay(); playScene("dungeness",0); }},
     {label:"Hacky Sack", action:()=>{ closeDreamOverlay(); state.flags.hackySackCooldown=0; openHackySack(); }},
     {label:"Ferry Captain", action:()=>{ closeDreamOverlay(); openFerryGame(); }},
-    {label:"Count the Seagulls", action:()=>{ closeDreamOverlay(); openSeagullCount(); }},
     {label:"Legion Hall", action:()=>dreamShow("legion")}
   ];
   // The strong freebies only work while the peninsula's magic is still thick.
@@ -2193,6 +2193,7 @@ function carlyTalk(){
     "Carly complains, at length, about something that happened at practice today. You stopped following the plot two minutes ago. She does not notice. She does not need you to.",
     "A pack of Carly's friends roll through on bikes, and one of them says something about you that makes the rest of them lose it. Carly tells them to knock it off. They do not knock it off.",
     "Carly's got a NOW CD going on a boombox in the grass, that one song everybody pretends to hate, and she is absolutely not pretending. She knows every word. She is not embarrassed. You are, a little, for both of you.",
+    "Carly's rabbit has, once again, developed powerful and specific feelings about a shoe — the biggest one it can locate, which around here always means Lucas's. Carly narrates the entire courtship with the flat calm of someone who stopped being embarrassed by it years ago. Lucas, wherever he currently is, can feel it happening.",
     "Penguin spots Carly a good twenty yards from the coop and launches. She's over the fence before you can even yell a warning. Penguin, for reasons nobody has ever explained, has never once come after you."
   ];
   const found = Math.random()<0.25;
@@ -2440,7 +2441,6 @@ function refreshHud(){
   saveGame();
 }
 function getContextualHint(){
-  if(!state.companion.joined) return "Find Taco Bell in Sequim to meet up and get the summer started.";
   if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
   if(state.gas < 15) return "Getting low on gas — look for a gas station.";
   // Surface the nearest way off the peninsula as the player closes in on one.
@@ -2459,7 +2459,7 @@ function getContextualHint(){
 /* ---- Location handlers: home base ---- */
 const JESSE_FAMILY_LINES = [
   "Patti's got dinner going and a dozen questions about where you've actually been all day. You answer maybe three of them honestly.",
-  "Patti hands you a Tupperware 'for the road' without being asked. You will eat all of it before you even reach Taco Bell.",
+  "Patti hands you a Tupperware 'for the road' without being asked. You will eat all of it before you're even off the mountain.",
   "Andy's out messing with the truck again — the same repair he's been 'almost done with' since spring. He gives you a nod and keeps working.",
   "Andy asks if you've thought about your future. You have not. You both let it go without much fuss."
 ];
@@ -2475,9 +2475,9 @@ function openHome(){
   if(!state.flags.jesseCouchBonus){
     state.flags.jesseCouchBonus = true;
     gainQuarters(2);
-    showModal("LOST MOUNTAIN",
-      "Your room. Quiet enough up here to hear yourself think — if you don't mind the drive to anywhere. You dig through the couch cushions and find some quarters.<br><br><span class='small'>+2 quarters</span>",
-      [{text:"Head out",cls:"gold"}]);
+    showModal("HOME ON LOST MOUNTAIN",
+      "Inside: reclaimed-wood walls your family put up board by board, the wood fireplace going low and warm, that specific quiet you only get this far up the mountain. You dig through the couch cushions by the hearth and turn up some quarters.<br><br><span class='small'>+2 quarters</span>",
+      [{text:"Warm up a minute",cls:"gold"}], "homefireplace");
     return;
   }
   if(!state.flags.laurenDream && Math.random()<0.15){
@@ -2486,75 +2486,52 @@ function openHome(){
       [{text:"Huh.",cls:"gold"}]);
     return;
   }
-  if(Math.random()<0.35){
-    showModal("LOST MOUNTAIN", pick(JESSE_FAMILY_LINES), [{text:"Okay",cls:"gold"}]);
+  if(Math.random()<0.4){
+    showModal("HOME ON LOST MOUNTAIN", pick(JESSE_FAMILY_LINES), [{text:"Okay",cls:"gold"}], "homefireplace");
     return;
   }
-  showModal("LOST MOUNTAIN","Nothing left in the couch. Time to go find Lucas.",[{text:"Okay",cls:"gold"}]);
+  showModal("HOME ON LOST MOUNTAIN","The fire's down to coals and the couch has given up all its quarters. Time to head back down the mountain.",[{text:"Okay",cls:"gold"}], "homefireplace");
 }
-const LUCAS_FAMILY_LINES = [
-  "Rick's home for once, half-asleep in front of the TV. He grunts something that might be a greeting.",
-  "Rick asks if you're 'still doing the music thing.' You're not sure what he means. Neither is he.",
-  "Sam's parked on the couch, unbothered, and immediately starts making fun of Lucas' hair for no reason.",
-  "Sam wants to know if you're 'still hanging around.' He says it like an insult and a compliment at the same time.",
-  "Angela's got headphones on and barely looks up, but she still manages one perfectly-timed eye roll in your direction.",
-  "Angela's drawing something at the kitchen table and won't let anyone see it yet."
+// Lucas' household — Diane (mom), little sibs Sam & Angela, video games, soccer, and
+// the same Kansas riff on a loop. Written POV-neutral so it works for either player.
+const LUCAS_HOME_LINES = [
+  "Sam's on the couch with a controller, refusing to pause, narrating his own gameplay like it's being broadcast live. Angela's at the kitchen table drawing something she absolutely will not let anyone see yet.",
+  "Diane's got dinner going and a second plate out before anyone's asked for one. Sam makes fun of the chrismahawk on principle; Angela lands one perfectly-timed eye roll and disappears back into her headphones.",
+  "There's a guitar out and the same Kansas riff going for the four-hundredth time — 'Carry On Wayward Son,' always — and it's actually getting good now, which somehow makes it worse.",
+  "A soccer bag by the door, cleats caked in west-end mud, practice clearly having run long. Sam wants to know if anybody 'actually played today or just stood there again.'",
+  "Two controllers, a leaning tower of games, and a heated argument about whether the split-screen is fair. It is not fair. Sam has unilaterally ruled that it is fair."
 ];
+const GARAGE_MAHAL_LINES = [
+  "Rick's out at the Garage-mahal, as ever — the endless bachelor build, a structure that has been 'almost done' for several years and quietly grows a new wing every time your back is turned. Grandpa supervises from a lawn chair, which mostly means editorializing. There is meat on the grill. There is always meat on the grill.",
+  "The Garage-mahal has a new addition nobody can explain and Rick declines to justify. Grandpa has firm opinions about the framing. Rick fires up the barbecue instead of answering, which is its own kind of answer. You eat extremely well and ask no further questions.",
+  "Rick hands you a burger the size of your face and a screwdriver, in that order, and puts you to work holding something level for twenty minutes while Grandpa narrates from the lawn chair. Against all odds, it's one of the best afternoons in recent memory."
+];
+function openGarageMahal(){
+  const found = Math.random()<0.4;
+  let extra = found ? "<br><br><span class='small'>Rick slips you a few bucks 'for the road.' +2 quarters</span>" : "";
+  if(found){ gainQuarters(2); refreshHud(); }
+  showModal("DAD'S GARAGE-MAHAL", pick(GARAGE_MAHAL_LINES)+extra, [{text:"Full and slightly greasy",cls:"gold"}]);
+}
 function openLucasHouse(){
-  if(state.character!=="jesse"){
-    showModal("HOME","Five minutes from anywhere that matters. You grab your jacket and head out.",[{text:"Okay",cls:"gold"}]);
-    return;
-  }
+  // Diane's gas money — the sweet recurring bit, now anchored to her porch.
   if(!state.flags.lucasMomBonus){
     state.flags.lucasMomBonus = true;
     gainQuarters(5);
-    showModal("LUCAS' HOUSE","Diane presses some quarters into your hand. \"For gas, hon.\"<br><br><span class='small'>+5 quarters</span>",
-      [{text:"Thanks!",cls:"gold"}]);
+    showModal("LUCAS' HOUSE","Diane meets you at the door and folds some quarters into your hand before you can argue. \"For gas, hon. And get a real lunch — not just chips.\"<br><br><span class='small'>+5 quarters</span>",
+      [{text:"Thanks, Diane",cls:"gold"}]);
     return;
   }
-  if(Math.random()<0.45){
-    showModal("LUCAS' HOUSE", pick(LUCAS_FAMILY_LINES), [{text:"Okay",cls:"gold"}]);
-  } else {
-    showModal("LUCAS' HOUSE","Lucas is probably already at Taco Bell. Diane waves from the porch.",[{text:"Okay",cls:"gold"}]);
-  }
-}
-function openTacoBell(){
-  if(!state.flags.tacoBellFound){
-    state.flags.tacoBellFound = true;
-    gainQuarters(1);
-    const buddy = charName(otherCharacter());
-    let justJoined = false;
-    if(!state.companion.joined){
-      state.companion.joined = true;
-      state.companion.x = state.px - 26; state.companion.y = state.py;
-      state.companion.history = [];
-      justJoined = true;
-    }
-    const intro = state.character==="lucas"
-      ? "Taco Bell. Your shift technically started ten minutes ago."
-      : `Taco Bell — where ${buddy} works some shifts, and where you meet up whenever you've both got class at Peninsula College. ${buddy} spots you and slides over a free something when the manager's turned around.`;
-    showModal("TACO BELL",`${intro} You find a quarter wedged in the booth seat.<br><br><span class='small'>+1 quarter</span>`,
-      [{text:"Let's go",cls:"gold",onClick:()=>{
-        if(justJoined) showTempHint(`${buddy}'s riding with you now.<br>Watch the 🏛️ <b>badge</b> (bottom-right) — it tracks which tribe you're becoming.<br>📓 <b>Memory Book</b> tracks everything else.`, 5500);
-      }}]);
+  // The old Diane pop-in lives here now: an occasional bigger send-off.
+  if(Date.now() > (state.flags.momPopCooldown||0) && Math.random()<0.5){
+    state.flags.momPopCooldown = Date.now()+90000;
+    state.flags.dianeErrand = true;
+    state.gas = Math.min(state.maxGas, state.gas+30);
+    gainQuarters(3); refreshHud();
+    showModal("DIANE","\"You two headed up to Port Townsend again? Take this.\" Diane tops off your tank and your pockets both, waves off every protest, and shoos you off the porch before you can say no.<br><br><span class='small'>+30 gas, +3 quarters</span>",[{text:"You're the best",cls:"gold"}]);
     return;
   }
-
-  let tip = "";
-  if(state.character==="lucas" && Math.random()<0.3){
-    gainQuarters(1);
-    tip = "<br><br><span class='small'>+1 quarter — decent tips today</span>";
-  }
-  const flavor = state.character==="lucas"
-    ? "Another shift. Same fryer smell, same registers."
-    : `${charName(otherCharacter())}'s on shift. You lean on the counter and wait it out.`;
-
-  const buttons = [];
-  if(state.companion.joined && TRAVEL[state.mapKey] && TRAVEL[state.mapKey].campus){
-    buttons.push({text:"Ride to campus together (12 gas)", cls:"gold", disabled: state.gas<12, onClick:()=>travelTo("campus",12)});
-  }
-  buttons.push({text:"Hang around"});
-  showModal("TACO BELL", flavor+tip, buttons);
+  const btns = [{text:"Head out",cls:"gold"}, {text:"Swing by Dad's Garage-mahal", onClick:openGarageMahal}];
+  showModal("LUCAS' HOUSE", pick(LUCAS_HOME_LINES), btns);
 }
 function openGasStation(){
   const price = state.prices.gas;
@@ -2649,10 +2626,6 @@ function openRecordStore(){
 }
 function openPier(){
   state.flags.pierVisited = true;
-  if(Math.random()<0.3){
-    openSeagullCount();
-    return;
-  }
   const buddy = charName(otherCharacter());
   const lines = [
     `You and ${buddy} sit at the end of the pier, feet hanging over the water, watching the ferry come in. Neither of you says much. You don't really have to.`,
@@ -2725,30 +2698,16 @@ function openLegionHall(){
 }
 
 /* ---- Sequim extras ---- */
-function openHurricaneCoffee(){
-  const found = Math.random()<0.2;
-  let extra = found ? "<br><br><span class='small'>+1 quarter, tip jar overflow</span>" : "";
-  if(found){ gainQuarters(1); refreshHud(); }
-  showModal("HURRICANE COFFEE","Drive-thru coffee, again. There are approximately four hundred of these within ten minutes of here."+extra,[{text:"Okay",cls:"gold"}]);
-}
-function openGrocery(){
+const SUNNY_FARMS_LINES = [
+  "Sunny Farms — the big red country store out on the highway, part grocery, part feed store, part town square. Bulk bins, local honey, produce from people you've actually met, and a cheese case you'd defend with your life. You leave with more cheese than a person your age can reasonably justify.",
+  "Sunny Farms. Your parents pick up feed and leave with three conversations and a free zucchini the size of a forearm. You linger by the cheese case doing your usual math: how much cheese is one quarter, and can you round up.",
+  "The Sunny Farms parking lot is doing its full Sequim thing — a llama in a trailer, two guys arguing happily about hay, someone selling dahlias out of a bucket. You get a hunk of the sharp cheddar and a cider and call it a perfect afternoon."
+];
+function openSunnyFarms(){
   const found = Math.random()<0.3;
-  let extra = found ? "<br><br><span class='small'>+1 quarter, found in a cart</span>" : "";
+  let extra = found ? "<br><br><span class='small'>+1 quarter, in the bulk-bin scoop</span>" : "";
   if(found){ gainQuarters(1); refreshHud(); }
-  showModal("GROCERY STORE","Not much reason to be here except it's something to do — though nobody needs the AC. This town barely breaks 75 in August, and someone will mention that to you, unprompted, within the hour."+extra,[{text:"Okay",cls:"gold"}]);
-}
-function openDairyQueen(){
-  const canBuy = state.quarters>=2;
-  showModal("DAIRY QUEEN","A Blizzard costs actual money you don't quite have.",[
-    {text:"Buy one anyway (2◉)",cls:"gold",disabled:!canBuy,onClick:()=>{ state.quarters-=2; state.spending.misc+=2; refreshHud(); floatText("worth it", state.px, state.py-30); }},
-    {text:"Just admire the sign"}
-  ]);
-}
-function openTacoTime(){
-  const found = Math.random()<0.25;
-  let extra = found ? "<br><br><span class='small'>+1 quarter, under a booth</span>" : "";
-  if(found){ gainQuarters(1); refreshHud(); }
-  showModal("TACO TIME","Technically a little out of town, but you're pretending it's basically Sequim tonight."+extra,[{text:"Okay",cls:"gold"}]);
+  showModal("SUNNY FARMS", pick(SUNNY_FARMS_LINES)+extra, [{text:"Grab the cheese and go",cls:"gold"}]);
 }
 function openClassroom(){
   const lines = [
@@ -3299,88 +3258,6 @@ document.getElementById("catchCancelBtn").addEventListener("click", ()=>{
   }
 });
 
-/* ---------- Count the Seagulls (the pier's answer to hunting bison) ---------- */
-let seagullGame = null;
-function openSeagullCount(){
-  seagullGame = {count:0, active:false, spawnTimer:null, endTimer:null, countdownTimer:null};
-  document.getElementById("seagullTally").textContent = "0";
-  const field = document.getElementById("seagullField");
-  field.innerHTML = "";
-  const cd = document.getElementById("seagullCountdown");
-  state.paused = true;
-  document.getElementById("seagullOverlay").classList.remove("hidden");
-  let count = 3;
-  cd.textContent = "Ready… " + count;
-  seagullGame.countdownTimer = setInterval(()=>{
-    count--;
-    if(count<=0){
-      clearInterval(seagullGame.countdownTimer);
-      cd.textContent = "GO!";
-      setTimeout(()=>{ cd.textContent=""; },500);
-      seagullGame.active = true;
-      spawnSeagull();
-      seagullGame.endTimer = setTimeout(endSeagullCount, 8000);
-    } else {
-      cd.textContent = "Ready… " + count;
-    }
-  },650);
-}
-function spawnSeagull(){
-  if(!seagullGame || !seagullGame.active) return;
-  const field = document.getElementById("seagullField");
-  const bird = document.createElement("div");
-  bird.className = "gull";
-  bird.textContent = "🕊️";
-  bird.style.left = (6+Math.random()*78) + "%";
-  bird.style.top = (8+Math.random()*72) + "%";
-  const remove = ()=>{ if(bird.parentNode) bird.parentNode.removeChild(bird); };
-  const lifeTimer = setTimeout(remove, 1100);
-  const tap = ev=>{
-    ev.preventDefault();
-    clearTimeout(lifeTimer);
-    seagullGame.count++;
-    document.getElementById("seagullTally").textContent = seagullGame.count;
-    bird.style.opacity = "0"; bird.style.transform = "scale(1.4)";
-    setTimeout(remove, 150);
-  };
-  bird.addEventListener("click", tap);
-  bird.addEventListener("touchstart", tap);
-  field.appendChild(bird);
-  if(seagullGame.active){
-    seagullGame.spawnTimer = setTimeout(spawnSeagull, 480+Math.random()*380);
-  }
-}
-function cancelSeagullCount(){
-  if(seagullGame){
-    clearInterval(seagullGame.countdownTimer);
-    clearTimeout(seagullGame.spawnTimer);
-    clearTimeout(seagullGame.endTimer);
-    seagullGame.active = false;
-    seagullGame = null;
-  }
-  document.getElementById("seagullField").innerHTML = "";
-  document.getElementById("seagullOverlay").classList.add("hidden");
-  state.paused = false;
-}
-document.getElementById("seagullCancelBtn").addEventListener("click", cancelSeagullCount);
-function endSeagullCount(){
-  seagullGame.active = false;
-  clearTimeout(seagullGame.spawnTimer);
-  document.getElementById("seagullField").innerHTML = "";
-  document.getElementById("seagullOverlay").classList.add("hidden");
-  state.paused = false;
-  const count = seagullGame.count;
-  state.flags.seagullBest = Math.max(state.flags.seagullBest||0, count);
-  const earned = Math.min(6, Math.floor(count/2));
-  if(earned>0) gainQuarters(earned);
-  if(count>=12) playFanfare();
-  const verdict = count>=12 ? "Legendary. A genuinely unwell amount of focus."
-    : count>=6 ? "Respectable. Very committed to this bit."
-    : "A modest count. The gulls remain, on the whole, undercounted.";
-  showModal("SEAGULL COUNT", `Final tally: ${count} seagulls. ${verdict}<br><br><span class='small'>${earned>0?`+${earned} quarters — someone assumed you dropped something and handed you change`:"No reward this time, but the gulls know your dedication."}</span>`,
-    [{text:"Worth it",cls:"gold"}]);
-}
-
 /* ---------- Ferry Captain (the ferry-captain daydream, but playable) ---------- */
 // Three lanes down the middle of the Sound (percent of field width); the margins
 // are left for the recognizable coastline. Boat + obstacles center on these.
@@ -3581,8 +3458,7 @@ const CIVILIZATIONS = {
     adjective:"Retiree", title:"Champion of the Retirees",
     wonderName:"The Pool, Finally", winScene:"poolwonder",
     spots:[
-      {k:"sequim:h"},{k:"sequim:i"},{k:"sequim:j"},{k:"sequim:k"},
-      {k:"sequim:D"},{k:"sequim:u"},{k:"sequim:z"},{k:"sequim:L"},{k:"sequim:T"}
+      {k:"sequim:i"},{k:"sequim:D"},{k:"sequim:u"},{k:"sequim:z"},{k:"sequim:L"}
     ]
   },
   porttownsend: {
@@ -3731,7 +3607,6 @@ function triggerCivAggro(){
 
 /* ---------- Memory book ---------- */
 const MEMORY_ITEMS = [
-  {label:"Met your ride-along at Taco Bell", check:()=>state.companion.joined},
   {label:"Bought your first record at Quimper Sound", check:()=>state.records>=1},
   {label:"Won a round of hacky sack", check:()=>!!state.flags.hackySackWon},
   {label:"Sat at the end of the pier", check:()=>!!state.flags.pierVisited},
@@ -3752,7 +3627,6 @@ const MEMORY_ITEMS = [
   {label:"Took Gino's offer and left in style", check:()=>!!state.flags.ginoEscape},
   {label:"Met the Waterfront Pizza waitress", check:()=>(state.flags.waitress||0)>=1},
   {label:"Survived a lecture (donut cushion included)", check:()=>!!state.flags.classroomVisited},
-  {label:"Counted seagulls at the pier", check:()=>(state.flags.seagullBest||0)>0},
   {label:"Piloted the ferry through Puget Sound", check:()=>(state.flags.ferryGameBest||0)>0},
   {label:"Chased the funny smell at the lavender farm", check:()=>!!state.flags.lavenderUnlocked},
   {label:"Witnessed the kinetic race chaos", check:()=>!!state.flags.kineticRaceSeen},
@@ -4101,6 +3975,8 @@ function startGame(){
     state.px = 3.5*TILE; state.py = 3.5*TILE;
     enterLostMountain();
   }
+  // Your buddy's with you from the jump — start them at your side, not the corner.
+  state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   document.getElementById("titleScreen").classList.add("hidden");
