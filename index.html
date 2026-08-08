@@ -643,7 +643,7 @@ const state = {
     lavenderCharges:0, lavenderUses:0, lavenderDrifted:false, lavenderUnlocked:false,
     carlyPlayedCatch:false, carlyCatchBest:0, carlyCatchCooldown:0,
     metLily:false, metRachel:false, seniorCooldown:0,
-    summerEndPrompted:false
+    summerEndPrompted:false, metAlex:false, alexCooldown:0
   },
   civVisited:{},
   civOptIn:{},        // towns you've chosen to "go all in" on (opt-in gate for the Wonders)
@@ -1605,6 +1605,16 @@ function drawCharacter(x,y,pal,facing,moving){
     ctx.beginPath(); ctx.ellipse(cx,cy-24,9,5,0,0,7); ctx.fill();
     ctx.fillRect(cx+5,cy-27,9,3);
   }
+  if(pal.accessory==="parrot"){
+    // a parrot riding the right shoulder, unbothered
+    const px2=cx+10, py2=cy-9;
+    ctx.fillStyle="#2f9e4a"; ctx.beginPath(); ctx.ellipse(px2,py2,4,6,0,0,7); ctx.fill();   // green body
+    ctx.fillStyle="#e83f3f"; ctx.fillRect(px2-3,py2-6,6,3);                                  // red head
+    ctx.fillStyle="#2f6fd0"; ctx.fillRect(px2+2,py2-1,3,6);                                  // blue wing
+    ctx.fillStyle="#e8b94a"; ctx.beginPath(); ctx.moveTo(px2-3,py2-5); ctx.lineTo(px2-6,py2-4); ctx.lineTo(px2-3,py2-3); ctx.fill(); // beak
+    ctx.fillStyle="#111"; ctx.fillRect(px2-1,py2-5,1,1);                                     // eye
+    ctx.fillStyle="#e8b94a"; ctx.fillRect(px2-1,py2+5,1,3);                                  // tail feather
+  }
 }
 
 /* ---------- Rendering ---------- */
@@ -1633,6 +1643,7 @@ function render(){
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTileBg(c,r,tileAt(c,r));
   if(state.mapKey==="lostmountain") drawLostMountainCritters();
   if(state.mapKey==="sequim" && sequimSenior) drawSeniorScooter(sequimSenior.x, sequimSenior.y, sequimSenior.facing);
+  if(state.mapKey==="campus") drawCampusAlex();
   drawInteractiveMarkers();
   const npcList = NPCS[state.mapKey] || [];
   npcList.forEach(npc=>{
@@ -1713,6 +1724,7 @@ function update(){
 
   if(state.mapKey==="lostmountain") updateLostMountainCritters();
   if(state.mapKey==="sequim") updateSequimSenior();
+  if(state.mapKey==="campus") updateCampusAlex();
 
   if(state.mapKey==="lostmountain" && !state.carly.away){
     if(!state.carly.appeared && Date.now()>state.carly.arriveTime){
@@ -2104,6 +2116,38 @@ function updateSequimSenior(){
     for(let i=0;i<12;i++){ const c=1+Math.floor(Math.random()*14), r=1+Math.floor(Math.random()*10); if(!SOLID.has(MAPS.sequim.rows[r][c])){ s.tx=(c+0.5)*TILE; s.ty=(r+0.5)*TILE; break; } }
   }
 }
+
+/* ---- Alex: Carly's boyfriend, Anina's brother, a parrot, and a dream of a party house ---- */
+const ALEX_PALETTE = {hair:"#3a2c1f", shirt:"#4a6a3a", pants:"#33313a", skin:"#d9a877", accessory:"parrot"};
+const ALEX_LINES = [
+  "Alex ambles over with a parrot on his shoulder — an actual parrot, no explanation offered — having drifted a respectful few steps behind his sister Anina all afternoon. \"Hey, you're tight with Carly, right?\" (He's Carly's guy.) Then, gazing into the middle distance: \"One day, man. One day I'm gonna have a party house. You'll be on the list.\" The parrot says nothing. The parrot has heard this before.",
+  "\"Anina says I follow her around too much,\" Alex confides, following Anina around. The parrot shifts its grip on his shoulder. \"But like — where else am I gonna be?\" A beat. \"Anyway. Party house. Someday. It's happening, I can feel it. There's a whole room in it just for this guy.\" He nods at the parrot. The parrot approves of this plan.",
+  "The parrot fixes you with a look of deep, ancient suspicion while Alex walks you through the floor plan of a party house that does not exist and may never exist. There's a keg room. There's a hammock room. There's a room, specifically, for the parrot. \"Tell Carly I said hey,\" he adds. \"And if you hear about any houses — big ones, good for parties — you come to me first. Ground floor of the dream.\""
+];
+let campusAlex = null;
+function rollAlexPresence(){
+  campusAlex = (Math.random() < 0.6)
+    ? { x:6.5*TILE, y:6.5*TILE, tx:7.5*TILE, ty:6.5*TILE, timer:0, facing:1 }
+    : null;
+}
+function updateCampusAlex(){
+  if(!campusAlex) return;
+  const a = campusAlex;
+  a.timer++;
+  if(a.timer > 90){   // drift around near Anina (she's at col6,row6)
+    a.timer = 0;
+    for(let i=0;i<10;i++){ const c=4+Math.floor(Math.random()*6), r=4+Math.floor(Math.random()*4); if(!SOLID.has(tileAt(c,r))){ a.tx=(c+0.5)*TILE; a.ty=(r+0.5)*TILE; break; } }
+  }
+  const prevX = a.x;
+  a.x += (a.tx-a.x)*0.03; a.y += (a.ty-a.y)*0.03;
+  if(Math.abs(a.x-prevX) > 0.03) a.facing = (a.x-prevX) > 0 ? 1 : -1;
+  if(Date.now() > (state.flags.alexCooldown||0) && Math.hypot(a.x-state.px, a.y-state.py) < TILE*0.8){
+    state.flags.alexCooldown = Date.now() + 45000;
+    state.flags.metAlex = true;
+    showModal("ALEX", pick(ALEX_LINES), [{text:"...sure, man",cls:"gold"}]);
+  }
+}
+function drawCampusAlex(){ if(campusAlex) drawCharacter(campusAlex.x, campusAlex.y, ALEX_PALETTE, "down", true); }
 document.getElementById("dreamBtn").addEventListener("click", openDreamOverlay);
 
 const TELEPORT_LOCATIONS = [
@@ -2192,6 +2236,7 @@ function teleportTo(mapKey){
   state.lastTileKey = null;
   if(state.companion.joined){ state.companion.x=state.px; state.companion.y=state.py; state.companion.history=[]; }
   if(mapKey==="pawaterfront") rollRyanPresence();
+  if(mapKey==="campus") rollAlexPresence();
   if(mapKey==="lostmountain"){ enterLostMountain(); }
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
@@ -3166,6 +3211,9 @@ function doArrival(dest){
   if(dest==="pawaterfront"){
     rollRyanPresence();
   }
+  if(dest==="campus"){
+    rollAlexPresence();
+  }
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   refreshHud();
@@ -3968,6 +4016,7 @@ const MEMORY_ITEMS = [
   {label:"Someone got a surprise job", check:()=>!!state.jobs.given},
   {label:"Met Steph", check:()=>(state.flags.steph||0)>=1},
   {label:"Met Anina", check:()=>(state.flags.anina||0)>=1},
+  {label:"Met Alex, his parrot, and the party-house dream", check:()=>!!state.flags.metAlex},
   {label:"Met Tara", check:()=>(state.flags.tara||0)>=1},
   {label:"Got mixed up with Gino somehow", check:()=>(state.flags.gino||0)>=1},
   {label:"Ran a favor for Gino's 'family'", check:()=>(state.flags.ginoFavors||0)>=1},
