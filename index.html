@@ -137,6 +137,11 @@
   .card h2{font-family:'Press Start 2P';font-size:14px;margin:0 0 10px;color:var(--rust);line-height:1.5;}
   .card p{font-size:19px;line-height:1.35;margin:0 0 12px;}
   .card .small{font-size:15px;color:#5a5340;}
+  /* keep long stories from drifting off the top of small screens: scroll the text, keep the scene + buttons in view */
+  #modal .card{max-height:92vh;display:flex;flex-direction:column;}
+  #modal #modalScene{flex:0 0 auto;}
+  #modal .ticketRow{overflow-y:auto;flex:1 1 auto;min-height:0;}
+  #modal #modalBtns{flex:0 0 auto;}
   .btnRow{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
   .btn{
     font-family:'VT323';font-size:18px;
@@ -263,11 +268,11 @@
           You're a Running Start kid trying to get off the Olympic Peninsula — and there's <b>more than one way out</b>. Graduate for real, drop out cool after five shows, become champion of a town, or take a certain classmate's offer. Everything else is fuel for the trip. The 📓 Memory Book keeps score of all four.
         </div>
         <div class="small" style="text-align:left;line-height:1.5;margin:6px 0 10px;">
-          • Walk around, collect quarters (◉) — pizza and records too<br>
-          • Gas stations turn quarters into gas so you can drive between towns<br>
-          • Legion Hall's always open for a show; Seattle and the Gorge only show up for a little while, so watch the banner up top when one opens<br>
-          • The more of a town you explore, the more you <i>become</i> that town — retiree, hippie, or ruffian. Fill a meter and its Wonder opens up<br>
-          • 🏛️ badge tracks your tribe; 📓 Memory Book tracks everything you've found
+          • You and your best friend do the summer together — drive to their town first to meet up, then you're a pair<br>
+          • Anything with a bobbing gold ▾ arrow is playable — walk onto it<br>
+          • Collect quarters (◉); gas stations turn quarters into gas so you can drive between towns<br>
+          • Legion Hall's always open for a show; Seattle and the Gorge only pop up for a little while — watch the banner up top<br>
+          • 📓 Memory Book tracks it all: your four ways off the peninsula, crushes, mixtape, and more
         </div>
         <button class="btn gold pixel" id="orientNewBtn" style="font-size:13px;padding:10px 16px;">NEW GAME</button>
       </div>
@@ -545,6 +550,7 @@ const TRAVEL = {
   sequim: {
     lostmountain:{cost:17,label:"Lost Mountain"},
     campus:{cost:20,label:"Peninsula College"},
+    pawaterfront:{cost:22,label:"PA Waterfront"},
     porttownsend:{cost:30,label:"Port Townsend"},
     dungeness:{cost:12,label:"Dungeness Spit",scene:true}
   },
@@ -557,11 +563,13 @@ const TRAVEL = {
   porttownsend: {
     sequim:{cost:30,label:"Sequim"},
     campus:{cost:25,label:"Peninsula College"},
+    pawaterfront:{cost:28,label:"PA Waterfront"},
     fortworden:{cost:8,label:"Fort Worden",scene:true}
   },
   pawaterfront: {
     campus:{cost:5,label:"Peninsula College"},
-    sequim:{cost:22,label:"Sequim"}
+    sequim:{cost:22,label:"Sequim"},
+    porttownsend:{cost:28,label:"Port Townsend"}
   }
 };
 
@@ -617,7 +625,7 @@ const state = {
   recordTitles: [],
   jobs: { given:false, holder:null, place:null },
   concert: { windowType:null, windowTravelsLeft:0, gorgeCooldownTravels:0, legionVisits:0, seattleAttended:false, gorgeAttended:false, everOpened:false },
-  companion: { joined:true, visible:false, x:0, y:0, history:[] },
+  companion: { joined:false, visible:false, x:0, y:0, history:[] },
   carly: { x:0, y:0, history:[], visible:false, moving:false, appeared:false, away:false, justReturned:false, arriveTime:0 },
   ryanNPC: { present:false, x:0, y:0, targetX:0, targetY:0, wanderTimer:0 },
   trailTimer:0,
@@ -650,9 +658,7 @@ const NPCS = {
   ],
   porttownsend: [
     {id:"tara", col:12, row:2, name:"Tara", stageFlag:"tara", stages:4,
-      pal:{hair:"#8a5a2a", shirt:"#4a5a6a", pants:"#33313a", skin:"#e3b284", accessory:null}},
-    {id:"waitress", col:5, row:2, name:"The Waitress", stageFlag:"waitress", stages:4,
-      pal:{hair:"#3a2a1f", shirt:"#c1553b", pants:"#2a2a2a", skin:"#e3b284", accessory:null}}
+      pal:{hair:"#8a5a2a", shirt:"#4a5a6a", pants:"#33313a", skin:"#e3b284", accessory:null}}
   ],
   lostmountain: [
     {id:"lily", col:2, row:5, name:"Lily", stageFlag:"metLily", reward:3,
@@ -873,7 +879,7 @@ function drawTileBg(col,row,ch){
     case "e": drawBuilding(x,y,"#4a6a3a","#26401f",true,"🌳"); break;
     case "g": drawBuilding(x,y,"#8a7a4a","#4f4324",true,"🎸"); break;
     case "h": drawBuilding(x,y,"#4a3324","#2a1a12",true,"☕"); break;
-    case "i": drawBuilding(x,y,"#c06a3a","#7a3a20",true,"🌻"); break;
+    case "i": drawBuilding(x,y,"#9a7a4a","#5f4a2a",true,"🌻"); break;
     case "j": drawBuilding(x,y,"#8a3a4a","#4f1f26",true,"🍦"); break;
     case "k": drawBuilding(x,y,"#c9843b","#7a4c1f",true,"🌮"); break;
     case "m": drawBuilding(x,y,"#7a6a52","#4a3f2f",true,"🎓"); break;
@@ -2033,9 +2039,9 @@ function drawLostMountainCritters(){
 /* ---- Sequim's most persistent hazard: an elderly resident, pain meds, a scooter ---- */
 let sequimSenior = null;
 const SENIOR_NEARMISS = [
-  "A mint-green scooter comes out of NOWHERE, cuts diagonally across three parking spaces and a curb, and misses your bumper by roughly the width of a decision. The driver — ninety if she's a day, enormous sunglasses, a brand-new prescription and no intention whatsoever of reading the label — does not slow, does not look, does not acknowledge you or the laws of Washington State. She's already two blocks gone. This is just Sequim.",
-  "An orange safety flag bears down on you at a speed that flag was never rated for. The gentleman piloting it has been driving since before seatbelts and sees no compelling reason to start braking now. You dive. He does not brake. He was never going to brake — braking is for people who fear death, and he made his peace with death years ago specifically to win standoffs exactly like this one.",
-  "The scooter lurches into sudden, committed reverse for reasons that will never be explained to anyone, and you execute a genuinely impressive evasive maneuver into a hydrangea. The driver waves — apology or threat, impossible to tell — and motors serenely on, doing a firm fifteen through a parking lot. Somewhere a pharmacist feels a chill and can't say why."
+  "A mint-green mobility scooter cuts diagonally across the parking lot and misses your knees by about a foot. The woman driving it — ninety if she's a day, sunglasses the size of dinner plates, clearly somewhere new on a fresh prescription — does not slow down and does not look. She is already halfway to the next aisle. Nobody around you even reacts. This is just Sequim.",
+  "A Buick the size of a small boat drifts through the intersection at a serene fifteen miles an hour, straddling both lanes, blinker on since roughly last Tuesday. The gentleman at the wheel can no longer really see over it and has made peace with that. You wait him out. Everyone waits him out. It's the only way.",
+  "A land-yacht of an old sedan reverses without warning and you step back onto a curb you didn't know was there. The driver waves — apology, or possibly just a wave, impossible to tell — and eases off again, careful and careless at the exact same time. Half the drivers in this town are on something; the other half just stopped checking their mirrors around 1987."
 ];
 function initSequimSenior(){
   let tc=8,tr=4;
@@ -2157,6 +2163,7 @@ function teleportTo(mapKey){
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   refreshHud();
+  checkCompanionMeetup();
 }
 function openDreamOverlay(){
   const fillGrid = (id, spots)=>{
@@ -2518,6 +2525,10 @@ function refreshHud(){
   saveGame();
 }
 function getContextualHint(){
+  if(!state.companion.joined){
+    const where = state.character==="jesse" ? "Sequim" : "Lost Mountain";
+    return `Find your car and drive to ${where} to meet up with ${charName(otherCharacter())}.`;
+  }
   if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
   if(state.gas < 15) return "Getting low on gas — look for a gas station.";
   // Surface the nearest way off the peninsula as the player closes in on one.
@@ -2553,7 +2564,7 @@ function openHome(){
     state.flags.jesseCouchBonus = true;
     gainQuarters(2);
     showModal("HOME ON LOST MOUNTAIN",
-      "Inside: reclaimed-wood walls your family put up board by board, the wood fireplace going low and warm, that specific quiet you only get this far up the mountain. You dig through the couch cushions by the hearth and turn up some quarters.<br><br><span class='small'>+2 quarters</span>",
+      "Inside: the river-rock wall your dad and his buddy stacked by hand, the woodstove ticking away with a good bed of embers, that specific quiet you only get this far up the mountain. The golden dog doesn't even lift his head. You dig through the couch cushions and turn up some quarters.<br><br><span class='small'>+2 quarters</span>",
       [{text:"Warm up a minute",cls:"gold"}], "homefireplace");
     return;
   }
@@ -2567,7 +2578,7 @@ function openHome(){
     showModal("HOME ON LOST MOUNTAIN", pick(JESSE_FAMILY_LINES), [{text:"Okay",cls:"gold"}], "homefireplace");
     return;
   }
-  showModal("HOME ON LOST MOUNTAIN","The fire's down to coals and the couch has given up all its quarters. Time to head back down the mountain.",[{text:"Okay",cls:"gold"}], "homefireplace");
+  showModal("HOME ON LOST MOUNTAIN","The woodstove's down to embers and the couch has surrendered its last quarter. Time to head back down the mountain.",[{text:"Okay",cls:"gold"}], "homefireplace");
 }
 // Lucas' household — Diane (mom), little sibs Sam & Angela, video games, soccer, and
 // the same Kansas riff on a loop. Written POV-neutral so it works for either player.
@@ -2651,13 +2662,17 @@ function openDowntown(){
     showModal("ALDRICH'S MARKET", pick(PT_MARKET_LINES)+extra, [{text:"Okay",cls:"gold"}]);
     return;
   }
-  const found = Math.random()<0.4;
-  if(found){
-    gainQuarters(1);
-    showModal("DOWNTOWN","A quiet stretch of downtown. Someone dropped a quarter by the door.<br><br><span class='small'>+1 quarter</span>",[{text:"Nice",cls:"gold"}]);
-  } else {
-    showModal("DOWNTOWN","Nothing much happening downtown today.",[{text:"Okay",cls:"gold"}]);
-  }
+  // Sequim downtown
+  const SEQUIM_DOWNTOWN = [
+    "Downtown Sequim is deserted — the whole town's out on Washington Street stringing up banners for the Lavender Festival, arguing over booth placement with the intensity of a much larger conflict.",
+    "A retiree in a visor stops you to explain, at length and unprompted, exactly how much better Sequim was before all these people moved here. He moved here in 1998. You nod and keep walking.",
+    "Somebody's already selling lavender everything — lavender lemonade, lavender soap, lavender kettle corn — a full two weeks before the festival. You buy nothing. You will smell like lavender anyway, somehow, for days.",
+    "Three antique shops, a bank, and a coffee stand. That's the whole downtown, and honestly it's plenty. Someone dropped a quarter by the coffee stand."
+  ];
+  const found = Math.random()<0.35;
+  let extra = "";
+  if(found){ gainQuarters(1); extra = "<br><br><span class='small'>+1 quarter</span>"; }
+  showModal("DOWNTOWN SEQUIM", pick(SEQUIM_DOWNTOWN)+extra, [{text:"Okay",cls:"gold"}]);
 }
 function openRyan(){
   if(state.mapKey==="pawaterfront"){
@@ -2672,18 +2687,37 @@ function openRyan(){
   }
   showModal("RYAN'S TRUCK","Ryan's truck — the one with the actual ferry foghorn wired in as a horn. He's nowhere around, as usual. He'll turn up when he turns up.",[{text:"Okay"}]);
 }
+const WAITRESS_LUCAS = [
+  "Upstairs, the waitress who's worked here approximately forever asks if you want the usual. You do. You cannot, for the life of you, say so out loud, and end up pointing mutely at a menu you have entirely memorized.",
+  "The waitress smiles at you on her way past and you become abruptly, deeply fascinated by the shelf of empty bottles, the stained-glass lamp, the floorboards — anything, anything at all, that is not her face.",
+  "She remembers your order. She remembers your NAME. This is the single most alarming thing that has happened all summer, and you respond to it by knocking over the parmesan shaker."
+];
+const WAITRESS_JESSE = [
+  "You order at the counter easy as anything and chat with the waitress about the summer while, beside you, Lucas quietly loses the ability to form words.",
+  "The waitress slides a basket of goldfish crackers over and asks how it's all going. You tell her. Lucas, next to you, is studying the ceiling with the focus of a man defusing a bomb.",
+  "You get the usual and razz Lucas the entire time about how he physically cannot look at the waitress. He does not argue. He also does not look at her."
+];
 function openPizza(){
   const price = state.prices.pizza;
   const canBuy = state.quarters>=price;
-  const waitress = !state.flags.pizzaWaitress ? " The waitress slides a basket of goldfish crackers your way — Lucas goes a little quiet." : "";
-  if(!state.flags.pizzaWaitress) state.flags.pizzaWaitress = true;
-  showModal("WATERFRONT PIZZA","The smell alone is worth the walk from the car."+waitress,[
-    {text:`Buy a slice (${price}◉)`,cls:"gold",disabled:!canBuy,onClick:()=>{
-      state.quarters-=price; state.spending.pizza+=price; state.pizza+=1; refreshHud();
-      floatText("+1 slice", state.px, state.py-30);
-    }},
-    {text:"Just looking"}
-  ]);
+  const stage = state.flags.waitress || 0;
+  const line = (state.character==="lucas" ? pick(WAITRESS_LUCAS) : pick(WAITRESS_JESSE));
+  // The waitress crush arc lives here now, at the actual pizza place.
+  let extra = "";
+  if(stage < 3){
+    state.flags.waitress = stage + 1;
+    if(stage >= 1){ gainQuarters(2); extra = "<br><br><span class='small'>+2 quarters — she waved off the difference</span>"; }
+  }
+  state.flags.pizzaWaitress = true;
+  showModal("WATERFRONT PIZZA — THE UPSTAIRS",
+    "951 Water Street, sixteen-time winner of Best Pizza, and the smell alone is worth the walk from the car. " + line + extra,
+    [
+      {text:`Buy a slice (${price}◉)`,cls:"gold",disabled:!canBuy,onClick:()=>{
+        state.quarters-=price; state.spending.pizza+=price; state.pizza+=1; refreshHud();
+        floatText("+1 slice", state.px, state.py-30);
+      }},
+      {text:"Just looking"}
+    ]);
 }
 function openRecordStore(){
   const price = state.prices.record;
@@ -2776,15 +2810,15 @@ function openLegionHall(){
 
 /* ---- Sequim extras ---- */
 const SUNNY_FARMS_LINES = [
-  "Sunny Farms — the big red country store out on the highway, part grocery, part feed store, part town square. Bulk bins, local honey, produce from people you've actually met, and a cheese case you'd defend with your life. You leave with more cheese than a person your age can reasonably justify.",
-  "Sunny Farms. Your parents pick up feed and leave with three conversations and a free zucchini the size of a forearm. You linger by the cheese case doing your usual math: how much cheese is one quarter, and can you round up.",
-  "The Sunny Farms parking lot is doing its full Sequim thing — a llama in a trailer, two guys arguing happily about hay, someone selling dahlias out of a bucket. You get a hunk of the sharp cheddar and a cider and call it a perfect afternoon."
+  "Sunny Farms — the low wooden shack out on the highway toward Carlsborg, way bigger inside than it looks. Bins of Nash's produce, a chocolate aisle full of things you can't identify, a cheese case worth respecting and a deli worth driving for. You get a sandwich that ruins you for all other sandwiches and eat it in the gravel lot.",
+  "Sunny Farms. The deli's going and the frozen-yogurt machine is the real reason every kid on the peninsula knows this place. You get a cone the size of your head and a hunk of cheese for later, and consider the day a success.",
+  "You wander the aisles of Sunny Farms doing your usual math — how much good cheese is one quarter, can you round up — then give up and get the froyo instead. Fresh dahlias by the door, a guy restocking Nash's carrots, that wood-shack smell of produce and cardboard. Perfect."
 ];
 function openSunnyFarms(){
   const found = Math.random()<0.3;
   let extra = found ? "<br><br><span class='small'>+1 quarter, in the bulk-bin scoop</span>" : "";
   if(found){ gainQuarters(1); refreshHud(); }
-  showModal("SUNNY FARMS", pick(SUNNY_FARMS_LINES)+extra, [{text:"Grab the cheese and go",cls:"gold"}]);
+  showModal("SUNNY FARMS", pick(SUNNY_FARMS_LINES)+extra, [{text:"Get the froyo",cls:"gold"}]);
 }
 function openClassroom(){
   const lines = [
@@ -2862,6 +2896,7 @@ function openCafes(){
   const lines = [
     "The good downtown coffee places and the restaurants with actual tablecloths — the ones you and {buddy} walk past constantly and never once go into, because they're for people with jobs and cars that don't make that sound. You window-shop the menus. Someday.",
     "Downtown PA has a handful of places that are genuinely nice, which you know only from the outside. You loiter near the door of one long enough to feel the air conditioning, then keep walking.",
+    "A jacked-up truck comes down the main drag doing a slow wheelie, engine screaming, a beer bottle arcing out the passenger window to shatter somewhere behind it. A second truck answers the first. Nobody downtown so much as looks up. Only in PA.",
     "There's a café here you've decided you'll come back to when you're rich. You've been deciding this for two years. The plan is airtight."
   ];
   const buddy = charName(otherCharacter());
@@ -3065,9 +3100,23 @@ function travelTo(dest,cost){
   document.getElementById("locLabel").textContent = mapDef().label;
   refreshHud();
 
+  if(checkCompanionMeetup()) return;
   if(jobSurpriseCheck()) return;
   if(advanceConcertWindow()) return;
   concertWindowCheck();
+}
+// Your buddy lives in the other guy's home town. First time you get there, you catch up.
+function companionHomeMap(){ return state.character==="jesse" ? "sequim" : "lostmountain"; }
+function checkCompanionMeetup(){
+  if(state.companion.joined || state.mapKey !== companionHomeMap()) return false;
+  state.companion.joined = true;
+  state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
+  updateSidekickButtons();
+  const body = state.character==="jesse"
+    ? "And there's Lucas — chrismahawk and all, leaning on Diane's car in the Sunny Farms lot like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
+    : "The drive up Lost Mountain takes approximately forever, and then there's Jesse on the porch, glasses catching the light, already halfway through a story you missed the beginning of. Good to see him. \"...anyway,\" he says, standing up. \"Let's go.\"";
+  showModal("GOOD TO SEE YOU", body, [{text:"Let's go",cls:"gold"}]);
+  return true;
 }
 function openFerry(){
   const wt = state.concert.windowType;
