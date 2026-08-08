@@ -606,7 +606,7 @@ const state = {
     ginoFavors:0, ginoFavorCooldown:0, ginoOfferUnlocked:false, ginoEscape:false,
     lavenderCharges:0, lavenderUses:0, lavenderDrifted:false, lavenderUnlocked:false,
     carlyPlayedCatch:false, carlyCatchBest:0, carlyCatchCooldown:0,
-    metLily:false, metRachel:false
+    metLily:false, metRachel:false, seniorCooldown:0
   },
   civVisited:{},
   wonders:{ sequim:false, porttownsend:false, hick:false },
@@ -1093,40 +1093,61 @@ function drawSceneImage(canvasEl, key){
     c.fillStyle="#e8b94a";
     c.beginPath(); c.arc(w*0.3,h*0.36,2,0,7); c.arc(w*0.62,h*0.3,2,0,7); c.fill();
   } else if(key==="homefireplace"){
-    // the Lost Mountain house interior: reclaimed-wood walls, a wood fireplace, warm light
-    c.fillStyle="#3a2a1c"; c.fillRect(0,0,w,h);                 // dim room
-    // vertical reclaimed-wood plank wall
-    for(let x=0;x<w;x+=14){
-      c.fillStyle = (Math.floor(x/14)%2) ? "#5c4126" : "#6a4c2e";
-      c.fillRect(x,0,13,h*0.82);
-      c.fillStyle="rgba(0,0,0,.18)"; c.fillRect(x+12,0,2,h*0.82);
+    // The real thing: a black wood stove on the river-rock wall Dad built by hand,
+    // stovepipe bending up, stone hearth pad, hardwood, tan couch, golden dog asleep.
+    const W=w, H=h;
+    c.fillStyle="#e9e3d5"; c.fillRect(0,0,W,H);                       // white plaster wall
+    // window to the firs, upper right
+    c.fillStyle="#cfe0e4"; c.fillRect(W*0.63,H*0.03,W*0.34,H*0.46);
+    c.fillStyle="#4a5f42";
+    for(let i=0;i<5;i++){ const bx=W*0.66+i*W*0.065; c.beginPath(); c.moveTo(bx-6,H*0.46); c.lineTo(bx,H*0.12); c.lineTo(bx+6,H*0.46); c.closePath(); c.fill(); }
+    c.strokeStyle="#5c4632"; c.lineWidth=3; c.strokeRect(W*0.63,H*0.03,W*0.34,H*0.46);
+    c.beginPath(); c.moveTo(W*0.80,H*0.03); c.lineTo(W*0.80,H*0.49); c.stroke();
+    // river-rock stone wall — hand-stacked rounded stones, left & behind the stove
+    for(let ry=H*0.30; ry<H*0.82; ry+=8){
+      const rowi = Math.round((ry-H*0.30)/8);
+      for(let rx=-6; rx<W*0.62; rx+=13){
+        const off = (rowi%2)?6:0;
+        const base = 150 + ((rx*7 + ry*5)%46);
+        c.fillStyle = `rgb(${base-8},${base-4},${base-16})`;
+        c.beginPath(); c.ellipse(rx+off+6, ry+4, 7, 4.4, 0, 0, 7); c.fill();
+        c.strokeStyle="rgba(0,0,0,.16)"; c.lineWidth=1; c.stroke();
+        c.fillStyle="rgba(255,255,255,.10)"; c.beginPath(); c.ellipse(rx+off+4, ry+2.5, 2.5, 1.4, 0, 0, 7); c.fill();
+      }
     }
-    // floor
-    c.fillStyle="#3a2c1e"; c.fillRect(0,h*0.82,w,h*0.18);
-    // stone hearth + firebox, center
-    const fx=w*0.36, fw=w*0.28;
-    c.fillStyle="#7c756a"; c.fillRect(fx-8,h*0.2,fw+16,h*0.62);   // stone surround
-    c.fillStyle="#5a5148";
-    for(let sy=0.24; sy<0.8; sy+=0.1){ for(let sx=0; sx<fw+8; sx+=12){ c.fillRect(fx-6+sx+((Math.round(sy*10))%2?6:0), h*sy, 10, h*0.07); } }
-    c.fillStyle="#1a120c"; c.fillRect(fx,h*0.42,fw,h*0.36);       // firebox
-    // logs + fire
-    c.fillStyle="#4a3320"; c.fillRect(fx+6,h*0.70,fw-12,6);
-    const flick = 0;
-    c.fillStyle="#e8892a";
-    c.beginPath(); c.moveTo(fx+fw*0.5-10,h*0.72); c.quadraticCurveTo(fx+fw*0.5,h*0.5,fx+fw*0.5+10,h*0.72); c.closePath(); c.fill();
-    c.fillStyle="#f4c24a";
-    c.beginPath(); c.moveTo(fx+fw*0.5-5,h*0.72); c.quadraticCurveTo(fx+fw*0.5,h*0.58,fx+fw*0.5+5,h*0.72); c.closePath(); c.fill();
-    // warm glow
-    const gl=c.createRadialGradient(fx+fw*0.5,h*0.62,4,fx+fw*0.5,h*0.62,w*0.4);
-    gl.addColorStop(0,"rgba(255,180,80,.28)"); gl.addColorStop(1,"rgba(255,180,80,0)");
-    c.fillStyle=gl; c.fillRect(0,0,w,h);
-    // wood mantel + a couple of mantel odds and ends
-    c.fillStyle="#4a3320"; c.fillRect(fx-12,h*0.34,fw+24,7);
-    c.fillStyle="#b5482f"; c.fillRect(fx-4,h*0.27,6,7);          // a little jar/candle
-    c.fillStyle="#3a6a4a"; c.fillRect(fx+fw-4,h*0.26,5,8);
-    // a slouchy couch in the foreground corner
-    c.fillStyle="#43584a"; c.fillRect(0,h*0.72,w*0.2,h*0.2);
-    c.fillStyle="#38493d"; c.fillRect(0,h*0.68,w*0.2,8);
+    // hardwood floor
+    c.fillStyle="#b98a4a"; c.fillRect(0,H*0.82,W,H*0.18);
+    c.strokeStyle="rgba(0,0,0,.14)"; c.lineWidth=1;
+    for(let fx2=0;fx2<W;fx2+=20){ c.beginPath(); c.moveTo(fx2,H*0.82); c.lineTo(fx2,H); c.stroke(); }
+    // stone/concrete hearth pad
+    c.fillStyle="#8f887c"; c.fillRect(W*0.20,H*0.77,W*0.30,H*0.09);
+    // the black wood stove
+    const sx=W*0.28, sw=W*0.15;
+    c.fillStyle="#17171b"; c.fillRect(sx,H*0.5,sw,H*0.28);            // body
+    c.fillStyle="#0e0e12"; c.fillRect(sx-2,H*0.47,sw+4,7);           // top plate
+    c.fillStyle="#2a2a2f"; c.beginPath(); c.arc(sx+sw*0.5,H*0.64,sw*0.40,0,7); c.fill();   // round door
+    c.fillStyle="#e8842a"; c.beginPath(); c.arc(sx+sw*0.5,H*0.64,sw*0.28,0,7); c.fill();   // fire
+    c.fillStyle="#f6cc55"; c.beginPath(); c.arc(sx+sw*0.5,H*0.66,sw*0.14,0,7); c.fill();
+    c.fillStyle="#0e0e12"; c.fillRect(sx+3,H*0.78,3,H*0.035); c.fillRect(sx+sw-6,H*0.78,3,H*0.035); // legs
+    // stovepipe: up, then bend toward the wall
+    c.strokeStyle="#34343a"; c.lineWidth=6; c.lineCap="round";
+    c.beginPath(); c.moveTo(sx+sw*0.5,H*0.47); c.lineTo(sx+sw*0.5,H*0.22); c.quadraticCurveTo(sx+sw*0.5,H*0.14,sx+sw*0.95,H*0.14); c.stroke();
+    c.lineWidth=1; c.lineCap="butt";
+    // warm glow from the door
+    const gl=c.createRadialGradient(sx+sw*0.5,H*0.64,4,sx+sw*0.5,H*0.64,W*0.35);
+    gl.addColorStop(0,"rgba(255,165,70,.24)"); gl.addColorStop(1,"rgba(255,165,70,0)");
+    c.fillStyle=gl; c.fillRect(0,0,W,H);
+    // tan couch, right
+    c.fillStyle="#c9b285"; c.fillRect(W*0.66,H*0.6,W*0.34,H*0.22);
+    c.fillStyle="#baa373"; c.fillRect(W*0.66,H*0.54,W*0.34,H*0.09);   // backrest
+    c.fillStyle="#c9b285"; c.fillRect(W*0.64,H*0.6,W*0.05,H*0.2);     // armrest
+    c.fillStyle="#3a5566"; c.fillRect(W*0.70,H*0.585,W*0.06,H*0.055); // blue throw pillow
+    // golden dog asleep on the floor by the stove
+    c.fillStyle="#d8b675";
+    c.beginPath(); c.ellipse(W*0.55,H*0.9,W*0.11,H*0.045,0,0,7); c.fill();   // body
+    c.beginPath(); c.ellipse(W*0.435,H*0.885,W*0.032,H*0.032,0,0,7); c.fill(); // head
+    c.fillStyle="#c4a25f"; c.beginPath(); c.moveTo(W*0.42,H*0.87); c.lineTo(W*0.44,H*0.86); c.lineTo(W*0.435,H*0.9); c.fill(); // ear
+    c.fillStyle="#1a1208"; c.fillRect(W*0.41,H*0.885,2,2);            // nose
   } else if(key==="ferrydream"){
     const grad = c.createLinearGradient(0,0,0,h);
     grad.addColorStop(0,"#8ec9e8");
@@ -1427,6 +1448,25 @@ function drawRooster(x,y){
   ctx.strokeStyle="#3a6a4a"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x+6,y-1); ctx.quadraticCurveTo(x+13,y-4,x+9,y-10); ctx.stroke(); // tail feather
   ctx.fillStyle="#111"; ctx.fillRect(x-6,y-5,1,1);
 }
+function drawSeniorScooter(x,y,facing){
+  // a mobility scooter piloted with total serenity and zero regard for physics
+  critterShadow(x,y,11);
+  const dir = facing<0 ? -1 : 1;
+  ctx.save(); ctx.translate(x,y); ctx.scale(dir,1);
+  ctx.fillStyle="#1a1a1a"; ctx.beginPath(); ctx.arc(-8,7,3,0,7); ctx.arc(9,7,3,0,7); ctx.fill();   // wheels
+  ctx.fillStyle="#3aa03a"; ctx.fillRect(-11,1,22,6);                                                // mint-green deck
+  ctx.fillStyle="#2a7a2a"; ctx.fillRect(-11,5,22,2);
+  ctx.fillStyle="#2a2224"; ctx.fillRect(2,-6,9,8);                                                  // seat
+  ctx.strokeStyle="#6a6a6a"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-8,1); ctx.lineTo(-10,-8); ctx.stroke(); // tiller
+  ctx.fillStyle="#444"; ctx.fillRect(-13,-9,7,2);                                                   // handlebars
+  ctx.strokeStyle="#e8b94a"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(10,-6); ctx.lineTo(12,-18); ctx.stroke(); // flag pole
+  ctx.fillStyle="#cf3f3f"; ctx.beginPath(); ctx.moveTo(12,-18); ctx.lineTo(19,-16); ctx.lineTo(12,-14); ctx.fill(); // orange-red flag
+  ctx.fillStyle="#8a8f95"; ctx.fillRect(2,-12,8,8);                                                 // cardigan torso
+  ctx.fillStyle="#e8c9a0"; ctx.fillRect(3,-17,6,5);                                                 // head
+  ctx.fillStyle="#e6e6e6"; ctx.fillRect(3,-18,6,2);                                                 // white hair
+  ctx.fillStyle="#1a1a1a"; ctx.fillRect(3,-16,6,2);                                                 // enormous sunglasses
+  ctx.restore();
+}
 function drawTarget(x,y){
   ctx.strokeStyle="#cf3f3f"; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(x+16,y+16,10,0,7); ctx.stroke();
@@ -1555,6 +1595,7 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTileBg(c,r,tileAt(c,r));
   if(state.mapKey==="lostmountain") drawLostMountainCritters();
+  if(state.mapKey==="sequim" && sequimSenior) drawSeniorScooter(sequimSenior.x, sequimSenior.y, sequimSenior.facing);
   drawInteractiveMarkers();
   const npcList = NPCS[state.mapKey] || [];
   npcList.forEach(npc=>{
@@ -1634,6 +1675,7 @@ function update(){
   }
 
   if(state.mapKey==="lostmountain") updateLostMountainCritters();
+  if(state.mapKey==="sequim") updateSequimSenior();
 
   if(state.mapKey==="lostmountain" && !state.carly.away){
     if(!state.carly.appeared && Date.now()>state.carly.arriveTime){
@@ -1987,6 +2029,41 @@ function drawLostMountainCritters(){
     else if(cr.type==="rooster") drawRooster(cr.x,cr.y);
     else drawChickens(cr.x-14,cr.y-20);
   });
+}
+/* ---- Sequim's most persistent hazard: an elderly resident, pain meds, a scooter ---- */
+let sequimSenior = null;
+const SENIOR_NEARMISS = [
+  "A mint-green scooter comes out of NOWHERE, cuts diagonally across three parking spaces and a curb, and misses your bumper by roughly the width of a decision. The driver — ninety if she's a day, enormous sunglasses, a brand-new prescription and no intention whatsoever of reading the label — does not slow, does not look, does not acknowledge you or the laws of Washington State. She's already two blocks gone. This is just Sequim.",
+  "An orange safety flag bears down on you at a speed that flag was never rated for. The gentleman piloting it has been driving since before seatbelts and sees no compelling reason to start braking now. You dive. He does not brake. He was never going to brake — braking is for people who fear death, and he made his peace with death years ago specifically to win standoffs exactly like this one.",
+  "The scooter lurches into sudden, committed reverse for reasons that will never be explained to anyone, and you execute a genuinely impressive evasive maneuver into a hydrangea. The driver waves — apology or threat, impossible to tell — and motors serenely on, doing a firm fifteen through a parking lot. Somewhere a pharmacist feels a chill and can't say why."
+];
+function initSequimSenior(){
+  let tc=8,tr=4;
+  for(let i=0;i<20;i++){ const c=1+Math.floor(Math.random()*14), r=1+Math.floor(Math.random()*10); if(!SOLID.has(MAPS.sequim.rows[r][c])){ tc=c; tr=r; break; } }
+  const px=(tc+0.5)*TILE, py=(tr+0.5)*TILE;
+  sequimSenior = { x:px, y:py, tx:px, ty:py, timer:0, retarget:30+Math.floor(Math.random()*40), facing:1 };
+  // a few seconds' grace so you don't get run over the instant you arrive
+  state.flags.seniorCooldown = Math.max(state.flags.seniorCooldown||0, Date.now()+7000);
+}
+function updateSequimSenior(){
+  if(!sequimSenior) initSequimSenior();
+  const s = sequimSenior;
+  s.timer++;
+  if(s.timer > s.retarget){
+    s.timer = 0; s.retarget = 24 + Math.floor(Math.random()*46);
+    for(let i=0;i<12;i++){ const c=1+Math.floor(Math.random()*14), r=1+Math.floor(Math.random()*10); if(!SOLID.has(MAPS.sequim.rows[r][c])){ s.tx=(c+0.5)*TILE; s.ty=(r+0.5)*TILE; break; } }
+  }
+  const prevX = s.x;
+  s.x += (s.tx - s.x) * 0.07;   // fast and jerky
+  s.y += (s.ty - s.y) * 0.07;
+  if(Math.abs(s.x-prevX) > 0.05) s.facing = (s.x-prevX) > 0 ? 1 : -1;
+  // near-miss with the player
+  if(Date.now() > (state.flags.seniorCooldown||0) && Math.hypot(s.x-state.px, s.y-state.py) < TILE*0.9){
+    state.flags.seniorCooldown = Date.now() + 60000;
+    showModal("LOOK OUT—", pick(SENIOR_NEARMISS), [{text:"...only in Sequim",cls:"gold"}]);
+    // send them careening off somewhere new
+    for(let i=0;i<12;i++){ const c=1+Math.floor(Math.random()*14), r=1+Math.floor(Math.random()*10); if(!SOLID.has(MAPS.sequim.rows[r][c])){ s.tx=(c+0.5)*TILE; s.ty=(r+0.5)*TILE; break; } }
+  }
 }
 document.getElementById("dreamBtn").addEventListener("click", openDreamOverlay);
 
