@@ -182,11 +182,18 @@
   #smokePuff.fadeOut{opacity:0;}
   #ferryCountdown{font-family:'Press Start 2P';font-size:16px;color:var(--rust);min-height:20px;margin-bottom:6px;}
   #ferryField{
-    position:relative;height:150px;overflow:hidden;border-radius:4px;
-    background:linear-gradient(180deg,#3e7c9a,#1f4f66);border:2px solid var(--ink);margin-bottom:10px;
+    position:relative;height:300px;overflow:hidden;border-radius:4px;
+    /* a vertical channel: green shorelines left & right, deep water down the middle */
+    background:linear-gradient(90deg,#2e5a3a 0%,#3a6b46 5%,#3e7c9a 12%,#286a86 50%,#3e7c9a 88%,#3a6b46 95%,#2e5a3a 100%);
+    border:2px solid var(--ink);margin-bottom:10px;
   }
-  #ferryBoat{position:absolute;left:6px;font-size:30px;transition:top .25s;user-select:none;}
-  .ferryObstacle{position:absolute;font-size:26px;user-select:none;}
+  #ferryField:before{
+    /* faint wake lines running down the channel */
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0 2px,transparent 2px 26px);
+  }
+  #ferryBoat{position:absolute;bottom:12px;left:50%;font-size:34px;transform:translateX(-50%);transition:left .1s linear;user-select:none;z-index:2;}
+  .ferryObstacle{position:absolute;top:-34px;font-size:27px;transform:translateX(-50%);user-select:none;will-change:top;}
 
   #memoryList{max-height:52vh;overflow:auto;margin:4px 0;}
   .memRow{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:16px;}
@@ -306,13 +313,13 @@
     <div id="ferryOverlay" class="overlay hidden">
       <div class="card" style="text-align:center;">
         <h2>FERRY CAPTAIN</h2>
-        <p class="small">Switch lanes to dodge everything. Don't ask how a car ferry is doing any of this.</p>
+        <p class="small">Puget Sound runs north–south. Steer left and right (◀ ▶ or arrow keys) to dodge what's drifting down the channel. Don't ask how a car ferry is doing any of this.</p>
         <div id="ferryCountdown"></div>
         <div class="tally">Dodged: <span id="ferryScore">0</span> · Hits: <span id="ferryHits">0</span>/3</div>
         <div id="ferryField"><div id="ferryBoat">⛴️</div></div>
         <div class="btnRow" style="justify-content:center;">
-          <button class="btn rust pixel" id="ferryUpBtn" style="font-size:13px;">▲ LANE</button>
-          <button class="btn rust pixel" id="ferryDownBtn" style="font-size:13px;">▼ LANE</button>
+          <button class="btn rust pixel" id="ferryUpBtn" style="font-size:15px;">◀</button>
+          <button class="btn rust pixel" id="ferryDownBtn" style="font-size:15px;">▶</button>
         </div>
         <button class="btn smallBtn" id="ferryCancelBtn" style="margin-top:8px;">✕ Skip</button>
       </div>
@@ -2918,21 +2925,31 @@ function endSeagullCount(){
 }
 
 /* ---------- Ferry Captain (the ferry-captain daydream, but playable) ---------- */
-const FERRY_LANES = [20, 65, 110];
-const FERRY_OBSTACLES = ["🚢","📦","🐋","🏴‍☠️"];
+// Three lanes across the channel (percent of field width). Boat + obstacles are
+// centered on these with translateX(-50%).
+const FERRY_LANE_X = [24, 50, 76];
+const FERRY_OBSTACLES = ["🚢","📦","🐋","🪵","⛵","🛟","🦭"];
+const FERRY_DURATION = 16000;
 let ferryGame = null;
+function ferrySetBoatLane(){
+  document.getElementById("ferryBoat").style.left = FERRY_LANE_X[ferryGame.lane]+"%";
+}
 function openFerryGame(){
-  ferryGame = {lane:1, score:0, hits:0, active:false, spawnTimer:null, endTimer:null, countdownTimer:null};
   document.getElementById("ferryScore").textContent = "0";
   document.getElementById("ferryHits").textContent = "0";
   const field = document.getElementById("ferryField");
   field.querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
-  const boat = document.getElementById("ferryBoat");
-  boat.style.top = FERRY_LANES[1]+"px";
+  document.getElementById("ferryOverlay").classList.remove("hidden");
+  const H = field.clientHeight || 300;
+  ferryGame = {
+    lane:1, score:0, hits:0, active:false,
+    obstacles:[], spawnAcc:0, spawnEvery:1000, elapsed:0, last:0,
+    raf:null, countdownTimer:null, H, boatCenterY: H-30
+  };
+  ferrySetBoatLane();
   const cd = document.getElementById("ferryCountdown");
   state.paused = true;
   switchMusic(CONCERT_MELODY, "square", 0.06);
-  document.getElementById("ferryOverlay").classList.remove("hidden");
   let count = 3;
   cd.textContent = "Ready… " + count;
   ferryGame.countdownTimer = setInterval(()=>{
@@ -2940,10 +2957,10 @@ function openFerryGame(){
     if(count<=0){
       clearInterval(ferryGame.countdownTimer);
       cd.textContent = "CAST OFF!";
-      setTimeout(()=>{ cd.textContent=""; },500);
+      setTimeout(()=>{ if(ferryGame) cd.textContent=""; },500);
       ferryGame.active = true;
-      spawnFerryObstacle();
-      ferryGame.endTimer = setTimeout(()=>endFerryGame(false), 14000);
+      ferryGame.last = 0;
+      ferryGame.raf = requestAnimationFrame(ferryTick);
     } else {
       cd.textContent = "Ready… " + count;
     }
@@ -2952,72 +2969,83 @@ function openFerryGame(){
 function moveFerryLane(dir){
   if(!ferryGame || !ferryGame.active) return;
   ferryGame.lane = Math.max(0, Math.min(2, ferryGame.lane+dir));
-  document.getElementById("ferryBoat").style.top = FERRY_LANES[ferryGame.lane]+"px";
+  ferrySetBoatLane();
 }
 function spawnFerryObstacle(){
-  if(!ferryGame || !ferryGame.active) return;
   const field = document.getElementById("ferryField");
   const lane = Math.floor(Math.random()*3);
   const el = document.createElement("div");
   el.className = "ferryObstacle";
   el.textContent = FERRY_OBSTACLES[Math.floor(Math.random()*FERRY_OBSTACLES.length)];
-  el.style.top = FERRY_LANES[lane]+"px";
-  el.style.left = "94%";
+  el.style.left = FERRY_LANE_X[lane]+"%";
+  el.style.top = "-34px";
   field.appendChild(el);
-  requestAnimationFrame(()=>{
-    el.style.transition = "left 2.6s linear";
-    el.style.left = "-30px";
-  });
-  let resolved = false;
-  const checkTimer = setInterval(()=>{
-    if(resolved || !ferryGame){ clearInterval(checkTimer); return; }
-    const rect = el.getBoundingClientRect(), fieldRect = field.getBoundingClientRect();
-    const relLeft = rect.left - fieldRect.left;
-    if(relLeft < 42 && relLeft > 2 && lane===ferryGame.lane){
-      resolved = true;
+  // px/ms downward, with a little per-obstacle variety
+  ferryGame.obstacles.push({el, lane, y:-34, speed:0.14+Math.random()*0.05, dead:false});
+}
+function ferryTick(ts){
+  if(!ferryGame || !ferryGame.active) return;
+  if(!ferryGame.last) ferryGame.last = ts;
+  const dt = Math.min(48, ts - ferryGame.last);
+  ferryGame.last = ts;
+  ferryGame.elapsed += dt;
+  // difficulty ramps gently: things come a touch faster and more often over the run
+  const ramp = ferryGame.elapsed/FERRY_DURATION;
+  ferryGame.spawnAcc += dt;
+  if(ferryGame.spawnAcc >= ferryGame.spawnEvery){
+    ferryGame.spawnAcc = 0;
+    ferryGame.spawnEvery = 900 - ramp*350 + Math.random()*350;
+    spawnFerryObstacle();
+  }
+  const boatCenterY = ferryGame.boatCenterY;
+  for(const o of ferryGame.obstacles){
+    if(o.dead) continue;
+    o.y += (o.speed + ramp*0.06) * dt;
+    o.el.style.top = o.y + "px";
+    const oCenter = o.y + 13;
+    if(o.lane===ferryGame.lane && Math.abs(oCenter - boatCenterY) < 24){
+      o.dead = true; o.el.remove();
       ferryGame.hits++;
       document.getElementById("ferryHits").textContent = ferryGame.hits;
-      el.remove();
-      clearInterval(checkTimer);
-      if(ferryGame.hits>=3) endFerryGame(true);
-      return;
-    }
-    if(relLeft < -20){
-      resolved = true;
+      floatFerryFlash();
+      if(ferryGame.hits>=3){ endFerryGame(true); return; }
+    } else if(o.y > ferryGame.H + 6){
+      o.dead = true; o.el.remove();
       ferryGame.score++;
       document.getElementById("ferryScore").textContent = ferryGame.score;
-      el.remove();
-      clearInterval(checkTimer);
     }
-  }, 80);
-  if(ferryGame.active){
-    ferryGame.spawnTimer = setTimeout(spawnFerryObstacle, 650+Math.random()*450);
   }
+  ferryGame.obstacles = ferryGame.obstacles.filter(o=>!o.dead);
+  if(ferryGame.elapsed >= FERRY_DURATION){ endFerryGame(false); return; }
+  ferryGame.raf = requestAnimationFrame(ferryTick);
 }
-function cancelFerryGame(){
+function floatFerryFlash(){
+  const boat = document.getElementById("ferryBoat");
+  boat.style.filter = "brightness(2) saturate(0)";
+  setTimeout(()=>{ if(boat) boat.style.filter=""; }, 140);
+}
+function ferryCleanup(){
   if(ferryGame){
     clearInterval(ferryGame.countdownTimer);
-    clearTimeout(ferryGame.spawnTimer);
-    clearTimeout(ferryGame.endTimer);
+    if(ferryGame.raf) cancelAnimationFrame(ferryGame.raf);
     ferryGame.active = false;
-    ferryGame = null;
   }
   document.getElementById("ferryField").querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
   document.getElementById("ferryOverlay").classList.add("hidden");
+  document.getElementById("ferryBoat").style.filter = "";
   state.paused = false;
   switchMusic(MELODY, "triangle", 0.05);
+}
+function cancelFerryGame(){
+  ferryCleanup();
+  ferryGame = null;
 }
 document.getElementById("ferryCancelBtn").addEventListener("click", cancelFerryGame);
 function endFerryGame(ranAground){
   if(!ferryGame) return;
-  ferryGame.active = false;
-  clearTimeout(ferryGame.spawnTimer);
-  clearTimeout(ferryGame.endTimer);
-  document.getElementById("ferryField").querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
-  document.getElementById("ferryOverlay").classList.add("hidden");
-  state.paused = false;
-  switchMusic(MELODY, "triangle", 0.05);
   const score = ferryGame.score;
+  ferryCleanup();
+  ferryGame = null;
   state.flags.ferryGameBest = Math.max(state.flags.ferryGameBest||0, score);
   const earned = Math.min(6, Math.floor(score/2));
   if(earned>0) gainQuarters(earned);
@@ -3457,6 +3485,10 @@ document.getElementById("restartBtn").addEventListener("click", ()=>{ clearSave(
 const keyMap = {ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",
   w:"up",s:"down",a:"left",d:"right",W:"up",S:"down",A:"left",D:"right"};
 window.addEventListener("keydown", e=>{
+  if(ferryGame && ferryGame.active){
+    if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){ moveFerryLane(-1); e.preventDefault(); return; }
+    if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){ moveFerryLane(1); e.preventDefault(); return; }
+  }
   if(keyMap[e.key]){ state.keys[keyMap[e.key]] = true; e.preventDefault(); }
   if(e.code==="Space"){ hackyHit(); e.preventDefault(); }
 });
