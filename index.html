@@ -45,6 +45,19 @@
     color:var(--cream);font-size:13px;text-align:center;padding:5px 8px;
     border-bottom:2px solid var(--gold);
   }
+  #nextBanner{
+    display:flex;align-items:center;gap:8px;
+    padding:4px 10px;background:#182a1e;border-bottom:2px solid #0c150e;
+    font-size:15px;color:#dfe9d6;
+  }
+  #summerPill{
+    flex:0 0 auto;font-family:'Press Start 2P';font-size:9px;color:var(--gold);
+    background:rgba(232,185,74,.1);border:1px solid rgba(232,185,74,.4);
+    padding:3px 6px;border-radius:10px;white-space:nowrap;
+  }
+  #summerPill.urgent{color:#ffd7a0;background:rgba(181,72,47,.25);border-color:var(--rust);}
+  #nextStep{flex:1 1 auto;min-width:0;line-height:1.15;}
+  #nextStep b{color:var(--gold);}
   #hud{
     display:flex;gap:8px;align-items:center;justify-content:space-between;
     padding:6px 10px;background:var(--forest-dark);border-bottom:2px solid #0c150e;
@@ -247,6 +260,7 @@
       <div id="tripCounter" style="font-size:11px;color:#8fa88a;">Trip 0</div>
     </div>
   </header>
+  <div id="nextBanner" class="hidden"><span id="summerPill">☀️ —</span><span id="nextStep">—</span></div>
   <div id="concertBanner" class="hidden"></div>
 
   <div id="hud">
@@ -439,6 +453,7 @@
 const TILE = 32;
 const COLS = 16, ROWS = 12;
 const LEGION_COST = 14, SEATTLE_COST = 38, GORGE_COST = 65;
+const SUMMER_TRIPS = 22;   // soft summer length, in trips between towns — nudges you toward a way out
 
 /* ---------- Maps ---------- */
 // # wall/tree   ~ water   C campus building (solid)
@@ -614,9 +629,12 @@ const state = {
     ginoFavors:0, ginoFavorCooldown:0, ginoOfferUnlocked:false, ginoEscape:false,
     lavenderCharges:0, lavenderUses:0, lavenderDrifted:false, lavenderUnlocked:false,
     carlyPlayedCatch:false, carlyCatchBest:0, carlyCatchCooldown:0,
-    metLily:false, metRachel:false, seniorCooldown:0
+    metLily:false, metRachel:false, seniorCooldown:0,
+    summerEndPrompted:false
   },
   civVisited:{},
+  civOptIn:{},        // towns you've chosen to "go all in" on (opt-in gate for the Wonders)
+  civDeclined:{},     // highest offer level you've waved off, per town
   wonders:{ sequim:false, porttownsend:false, hick:false },
   breakIns:{},
   tripCount:0,
@@ -1762,6 +1780,8 @@ function update(){
   if(isKingOfAny() && Date.now()>(state.flags.aggroCooldown||0) && Math.random()<0.0004){
     triggerCivAggro();
   }
+  // Offer the "go all in on this town" opt-in once you've naturally leaned into one.
+  checkCivOffer();
 }
 
 /* ---------- Interactions ---------- */
@@ -2392,6 +2412,7 @@ function showModal(title,body,buttons,sceneKey){
 function closeModal(){
   state.paused = false;
   document.getElementById("modal").classList.add("hidden");
+  refreshHud();   // keep the top banner + hint fresh after whatever just happened
 }
 
 /* ---------- Tiny chiptune audio engine (no files, all synthesized) ---------- */
@@ -2498,19 +2519,35 @@ function refreshHud(){
   document.getElementById("gasBarInner").style.width = Math.max(0,state.gas) + "%";
   document.getElementById("gasNum").textContent = Math.max(0,Math.round(state.gas));
   document.getElementById("tripCounter").textContent = "Trip " + state.tripCount;
-  document.getElementById("hint").textContent = getContextualHint();
+  const step = getContextualHint();
+  document.getElementById("hint").textContent = step;
 
+  // The civ badge is hidden until you deliberately opt into a town (no more surprise meter).
   const badge = document.getElementById("civBadge");
   if(badge){
     if(isKingOfAny()){
       badge.textContent = "👑 " + CIVILIZATIONS[firstKingCiv()].adjective;
-      badge.classList.add("gold");
+      badge.classList.add("gold"); badge.classList.remove("hidden");
     } else {
-      const dom = dominantCiv();
-      badge.textContent = "🏛️ " + civPct(dom) + "% " + CIVILIZATIONS[dom].adjective;
-      badge.classList.remove("gold");
+      const tc = trackedCiv();
+      if(tc){
+        badge.textContent = "🏛️ " + civPct(tc) + "% " + CIVILIZATIONS[tc].adjective;
+        badge.classList.remove("gold","hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
     }
   }
+
+  // Summer clock + prescriptive "do this next" banner
+  const left = summerTripsLeft();
+  const pill = document.getElementById("summerPill");
+  if(pill){
+    pill.textContent = left>0 ? `☀️ ${left} trip${left===1?"":"s"} left` : "☀️ summer's over";
+    pill.classList.toggle("urgent", left<=5);
+  }
+  const ns = document.getElementById("nextStep");
+  if(ns) ns.textContent = "▶ " + step;
 
   const banner = document.getElementById("concertBanner");
   if(state.concert.windowType){
@@ -2524,23 +2561,39 @@ function refreshHud(){
   }
   saveGame();
 }
+function summerTripsLeft(){ return Math.max(0, SUMMER_TRIPS - state.tripCount); }
+function trackedCiv(){
+  // the town you've opted into and are furthest along toward its Wonder (not yet king)
+  const opts = Object.keys(state.civOptIn).filter(k=>state.civOptIn[k] && !isKing(k));
+  if(!opts.length) return null;
+  return opts.slice().sort((a,b)=>civPct(b)-civPct(a))[0];
+}
+// The single most useful next action — feeds both the top banner and the bottom hint.
 function getContextualHint(){
-  if(!state.companion.joined){
-    return `Find your car and drive down to Sequim to meet up with ${charName(otherCharacter())}.`;
+  const buddy = charName(otherCharacter());
+  if(!state.companion.joined) return `Drive down to Sequim to meet up with ${buddy}.`;
+  if(state.concert.windowType){
+    const need = state.concert.windowType==="gorge" ? GORGE_COST : SEATTLE_COST;
+    const label = state.concert.windowType==="gorge" ? "Gorge" : "Seattle";
+    return state.quarters>=need
+      ? `The ${label} show's on and you can afford it — catch it from any car/travel menu!`
+      : `The ${label} show's on! Earn quarters fast — need ${need}◉, you have ${state.quarters}◉.`;
   }
-  if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
-  if(state.gas < 15) return "Getting low on gas — look for a gas station.";
-  // Surface the nearest way off the peninsula as the player closes in on one.
-  if(canGraduate() && !state.flags.graduated) return "A way off the peninsula's ready — open the 📓 Memory Book to take it.";
-  if(state.flags.ginoOfferUnlocked && !state.flags.ginoEscape) return "Gino's offer is on the table — the 📓 Memory Book's got the door out.";
+  if(state.gas < 12) return "Low on gas — find a gas station and trade quarters for a fill-up.";
+  // A way off the peninsula is ready to take
+  if(canGraduate() && !state.flags.graduated) return "You can get off the peninsula now — open the 📓 Memory Book to choose how.";
+  if(state.flags.ginoOfferUnlocked && !state.flags.ginoEscape) return "Gino's offer is on the table — take it from the 📓 Memory Book whenever you're ready.";
+  const tc = trackedCiv();
+  if(tc && civWon(tc)) return `You're ${CIVILIZATIONS[tc].adjective.toLowerCase()} enough — go set off ${CIVILIZATIONS[tc].wonderName} and become a local legend.`;
+  if(tc) return `Keep hitting ${CIVILIZATIONS[tc].adjective.toLowerCase()} spots toward ${CIVILIZATIONS[tc].wonderName} (${civPct(tc)}%).`;
+  // Progress nudges toward the other exits
   const cv = state.flags.classroomVisits||0;
-  if(cv===3) return "One more lecture at Peninsula College and you graduate for real.";
-  if(totalShowsAttended()===4) return "One more show total and you can call it School of Life.";
-  const dom = dominantCiv();
-  if(civPct(dom)>=50 && !isKingOfAny()) return `Getting deep in with the ${CIVILIZATIONS[dom].adjective.toLowerCase()}s — a few more of their spots opens a Wonder.`;
-  if(state.quarters < 8) return "Explore glowing spots for quarters and stories.";
-  if(state.records < 2) return "Quimper Sound in Port Townsend has records worth digging for.";
-  return "Four ways off the peninsula — the 📓 Memory Book tracks them all.";
+  if(cv>=1 && cv<4) return `Study at Peninsula College (${cv}/4 lectures) to graduate for real.`;
+  const shows = totalShowsAttended();
+  if(shows>=1 && shows<5) return `Catch shows for the School-of-Life exit (${shows}/5) — the Legion Hall's always open.`;
+  if(summerTripsLeft()<=5) return "Summer's nearly up — pick how you're getting off the peninsula (📓 Memory Book).";
+  if(state.quarters < 10) return "Explore the glowing ▾ spots for quarters and stories.";
+  return "Four ways off the peninsula. Lean into a town, chase shows, hit the books, or play the angles — 📓 tracks it all.";
 }
 
 /* ---- Location handlers: home base ---- */
@@ -2645,7 +2698,7 @@ const KINETIC_RACE_LINES = [
 function openDowntown(){
   if(state.mapKey==="porttownsend"){
     // Your own Wonder: hippie enough to stop watching and start racing.
-    if(civWon("porttownsend") && !state.wonders.porttownsend){ raceWonder(); return; }
+    if(state.civOptIn.porttownsend && civWon("porttownsend") && !state.wonders.porttownsend){ raceWonder(); return; }
     // Outsider king crashing the race.
     if(!state.wonders.porttownsend && isKingOfAny() && !isKing("porttownsend") && !state.breakIns.porttownsend){
       if(breakIn("porttownsend")) return;
@@ -2676,7 +2729,7 @@ function openDowntown(){
 function openRyan(){
   if(state.mapKey==="pawaterfront"){
     // Your own Wonder: enough of a ruffian to set the trebuchet off for real.
-    if(civWon("hick") && !state.wonders.hick){ trebuchetWonder(); return; }
+    if(state.civOptIn.hick && civWon("hick") && !state.wonders.hick){ trebuchetWonder(); return; }
     // Outsider king trespassing the trebuchet.
     if(!state.wonders.hick && isKingOfAny() && !isKing("hick") && !state.breakIns.hick){
       if(breakIn("hick")) return;
@@ -2973,7 +3026,7 @@ function unlockLavender(){
 }
 function openPool(){
   // Your own Wonder: you've become enough of a retiree to earn the capstone.
-  if(civWon("sequim") && !state.wonders.sequim){ poolWonder(); return; }
+  if(state.civOptIn.sequim && civWon("sequim") && !state.wonders.sequim){ poolWonder(); return; }
   // Outsider king trespassing the retiree Wonder.
   if(!state.wonders.sequim && isKingOfAny() && !isKing("sequim") && !state.breakIns.sequim){
     if(breakIn("sequim")) return;
@@ -3100,9 +3153,22 @@ function travelTo(dest,cost){
   refreshHud();
 
   if(checkCompanionMeetup()) return;
+  if(checkSummerEnd()) return;
   if(jobSurpriseCheck()) return;
   if(advanceConcertWindow()) return;
   concertWindowCheck();
+}
+// The soft summer clock: at the end, a gentle nudge to pick a way out. No hard stop.
+function checkSummerEnd(){
+  if(state.flags.summerEndPrompted || state.tripCount < SUMMER_TRIPS) return false;
+  state.flags.summerEndPrompted = true;
+  showModal("SUMMER'S JUST ABOUT OVER",
+    "You can feel it turning — mornings gone cool, the lavender all cut and bundled, the tourists thinning out on 101. Summer doesn't officially end around here, it just quietly does. However you're planning to get off this peninsula, now's about the time to actually do it.",
+    [
+      {text:"Open the 📓 Memory Book", cls:"gold", onClick:openMemoryBook},
+      {text:"Eh — one more week"}
+    ]);
+  return true;
 }
 // Sequim's the shared hub — Lost Mountain's only road leads there, and it's Lucas's
 // home base. So you two always meet up in Sequim: Jesse drives down to it, Lucas is
@@ -3111,7 +3177,7 @@ function checkCompanionMeetup(){
   if(state.companion.joined || state.mapKey !== "sequim") return false;
   state.companion.joined = true;
   state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
-  updateSidekickButtons();
+  updateSidekickButtons(); refreshHud();
   const body = state.character==="jesse"
     ? "And there's Lucas — chrismahawk and all, leaning on Diane's car in the Sunny Farms lot like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
     : "You're barely into town before Jesse's beat-up car comes rattling down off Lost Mountain and swings into the Sunny Farms lot, Jesse leaning out the window mid-sentence — glasses catching the light, wild hair, already halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
@@ -3632,6 +3698,33 @@ function dominantCiv(){
   return Object.keys(CIVILIZATIONS).slice().sort((a,b)=>civPct(b)-civPct(a))[0];
 }
 
+/* --- Opt-in gate: the Wonders stay invisible until you deliberately choose a town.
+       No more surprise "you're 62% Retiree" badge. --- */
+const CIV_OFFER = {
+  sequim: "You keep ending up in Sequim — the farm store, the pool, the whole unbothered retiree rhythm of the place — and honestly, it's rubbing off on you. Lean all the way in and you could become a real Sequim retiree, which happens to be a whole way off this peninsula: <b>The Pool, Finally</b>, a local legend they'll be relitigating at the HOA meeting for years. Go for it?",
+  porttownsend: "You keep drifting back to Port Townsend — the market, the theater, the salt-and-patchouli of it — and it's rubbing off on you. Lean all the way in and you could become a genuine PT hippie, which happens to be a whole way off this peninsula: <b>The Race</b> (where, remember, coming in last is the entire point). Go for it?",
+  hick: "You keep ending up out on the west end — Ryan, the mill site, the whole PA waterfront — and it suits you more than you'd admit. Lean all the way in and you could become a genuine west-end ruffian, which happens to be a whole way off this peninsula: <b>The Trebuchet</b>. Go for it?"
+};
+function checkCivOffer(){
+  if(state.paused || !state.companion.joined) return;
+  for(const k of Object.keys(CIVILIZATIONS)){
+    if(state.civOptIn[k] || isKing(k)) continue;
+    const frac = civCount(k)/civTotal(k);
+    const level = frac>=0.8 ? 2 : frac>=0.5 ? 1 : 0;
+    if(level > (state.civDeclined[k]||0)){ offerCiv(k, level); return; }
+  }
+}
+function offerCiv(key, level){
+  const civ = CIVILIZATIONS[key];
+  showModal("GOING NATIVE?", CIV_OFFER[key], [
+    {text:"Go all in", cls:"gold", onClick:()=>{
+      state.civOptIn[key] = true; refreshHud();
+      showTempHint(`You're committing to the ${civ.adjective.toLowerCase()} life. The 🏛️ badge (bottom-right) now tracks your progress toward ${civ.wonderName}.`, 5500);
+    }},
+    {text:"Nah, just passing through", onClick:()=>{ state.civDeclined[key] = level; }}
+  ]);
+}
+
 /* --- The three Wonders --- */
 function poolWonder(){
   showModal("THE POOL, FINALLY",
@@ -3804,16 +3897,18 @@ function renderSpending(){
 }
 function renderCiv(){
   const order = ["sequim","porttownsend","hick"];
-  let html = `<p class="small" style="margin-bottom:8px;">Every spot you hit pulls you deeper into one of the peninsula's three tribes. Get about two-thirds of the way in and that tribe's Wonder opens up — a one-time capstone you can go set off.</p>`;
+  let html = `<p class="small" style="margin-bottom:8px;">Spend enough time in a town and it'll ask if you want to <i>go all in</i>. Say yes and that town's Wonder becomes one of your ways off the peninsula — a one-time local-legend capstone you can go set off.</p>`;
   order.forEach(key=>{
     const civ = CIVILIZATIONS[key];
     const pct = civPct(key), count=civCount(key), total=civTotal(key);
-    const won = civWon(key), king = isKing(key);
+    const won = civWon(key), king = isKing(key), optedIn = !!state.civOptIn[key];
     const brokeInto = state.breakIns[key];
     let status;
     if(king) status = `👑 ${civ.title}. The Wonder is yours.`;
-    else if(won) status = `✨ Wonder unlocked: "${civ.wonderName}" — go set it off.`;
-    else status = `${count}/${total} spots — ${civ.wonderName} still locked.`;
+    else if(optedIn && won) status = `✨ You're all in and ${civ.wonderName} is ready — go set it off.`;
+    else if(optedIn) status = `Going all in: ${count}/${total} spots toward ${civ.wonderName}.`;
+    else if(count/total >= 0.5) status = `${count}/${total} spots — it's asked (or will) whether you want to commit.`;
+    else status = `${count}/${total} spots — lean in more and it'll ask if you want to go all in.`;
     const barColor = king ? "#B5482F" : "#1F3B2C";
     html += `<div style="border-bottom:1px solid rgba(0,0,0,.12);padding:7px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Press Start 2P';font-size:11px;color:var(--forest);">${pct}% ${civ.adjective}</span><span>${king?"👑":won?"✨":""}</span></div>
@@ -3832,7 +3927,6 @@ function renderWaysOut(){
   const cv = Math.min(state.flags.classroomVisits||0, 4);
   const shows = totalShowsAttended();
   const king = isKingOfAny();
-  const dom = dominantCiv();
   const favors = state.flags.ginoFavors||0;
   const metGino = (state.flags.gino||0) >= 1;
   const row = (icon,label,status,ready,done)=>
@@ -3845,8 +3939,13 @@ function renderWaysOut(){
   html += row("🎓","Graduate — study 4×", gradDone?"✓ walked":`${cv}/4`, cv>=4 && !state.flags.graduated, gradDone);
   // 2 — school of life
   html += row("🎸","School of Life — 5 shows", state.flags.graduated&&!(cv>=4)&&!king?"✓ done":`${Math.min(shows,5)}/5`, shows>=5 && !state.flags.graduated, false);
-  // 3 — champion of a tribe
-  html += row("👑","Champion of a tribe", king?`✓ ${CIVILIZATIONS[firstKingCiv()].adjective}`:`${civPct(dom)}% ${CIVILIZATIONS[dom].adjective}`, king && !state.flags.graduated, false);
+  // 3 — champion of a tribe (only shows real progress once you've opted into a town)
+  const tc = trackedCiv();
+  let civStatus, civReady=false;
+  if(king){ civStatus = `✓ ${CIVILIZATIONS[firstKingCiv()].adjective}`; }
+  else if(tc){ civStatus = `${civPct(tc)}% ${CIVILIZATIONS[tc].adjective}`; civReady = civWon(tc); }
+  else { civStatus = "lean into a town"; }
+  html += row("👑","Local legend (a town's Wonder)", civStatus, civReady && !state.flags.graduated, king && !state.flags.graduated);
   // 4 — Gino's offer
   let gStatus, gReady=false, gDone=false;
   if(state.flags.ginoEscape){ gStatus="✓ gone"; gDone=true; }
@@ -4105,7 +4204,7 @@ function startGame(){
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   document.getElementById("titleScreen").classList.add("hidden");
-  document.getElementById("civBadge").classList.remove("hidden");
+  document.getElementById("nextBanner").classList.remove("hidden");
   state.paused = false;
   state.gameStarted = true;
   refreshHud();
@@ -4198,7 +4297,7 @@ function resumeGame(data){
   }
   document.getElementById("orientationScreen").classList.add("hidden");
   document.getElementById("titleScreen").classList.add("hidden");
-  document.getElementById("civBadge").classList.remove("hidden");
+  document.getElementById("nextBanner").classList.remove("hidden");
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   refreshHud();
