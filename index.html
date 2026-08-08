@@ -394,7 +394,7 @@
     </div>
 
     <div id="introHint" class="hidden">
-      <div class="box">Arrows / WASD, the pad below, or drag on the screen to move.<br>Walk onto a glowing spot to check it out.</div>
+      <div class="box">Arrows / WASD, the pad below, or drag on the screen to move.<br>Anything with a bobbing gold ▾ arrow is playable — walk onto it to check it out.</div>
     </div>
 
     <!-- Memory book -->
@@ -615,7 +615,7 @@ const state = {
     trebuchetFired:false, poolWonderDone:false, raceWonderDone:false,
     dungenessVisited:false,
     ginoFavors:0, ginoFavorCooldown:0, ginoOfferUnlocked:false, ginoEscape:false,
-    lavenderCharges:0, lavenderUses:0, lavenderDrifted:false,
+    lavenderCharges:0, lavenderUses:0, lavenderDrifted:false, lavenderUnlocked:false,
     carlyPlayedCatch:false, carlyCatchBest:0, carlyCatchCooldown:0,
     metLily:false, metRachel:false
   },
@@ -640,8 +640,8 @@ const state = {
 };
 
 const PALETTE = {
-  jesse: {hair:"#5b3a24", shirt:"#3f5d3f", pants:"#2e2a26", skin:"#e8b98f", accessory:null},
-  lucas: {hair:"#2b2622", shirt:"#28313a", pants:"#4a4238", skin:"#e3b284", accessory:"beret"}
+  jesse: {hair:"#4a3018", shirt:"#3f5d3f", pants:"#2e2a26", skin:"#e8b98f", accessory:"glasses", hairStyle:"wild"},
+  lucas: {hair:"#2b2622", shirt:"#28313a", pants:"#4a4238", skin:"#e3b284", accessory:"chrismahawk"}
 };
 const CARLY_PALETTE = {hair:"#6a4226", shirt:"#3a6a8a", pants:"#2a2a2a", skin:"#e8b98f", accessory:"cap"};
 const RYAN_PALETTE = {hair:"#8a7a4a", shirt:"#5a4a3a", pants:"#3a3a3a", skin:"#d9a877", accessory:null};
@@ -1077,6 +1077,32 @@ function drawSceneImage(canvasEl, key){
     // a bald eagle working the tideline
     c.strokeStyle="#3a2a1f"; c.lineWidth=2;
     c.beginPath(); c.moveTo(w*0.5,h*0.2); c.quadraticCurveTo(w*0.53,h*0.16,w*0.56,h*0.2); c.stroke();
+  } else if(key==="lavenderfarm"){
+    // Purple Haze Lavender Farm on Bell Bottom Road — rows of lavender, Olympics behind
+    const grad = c.createLinearGradient(0,0,0,h*0.5);
+    grad.addColorStop(0,"#bcd8ea"); grad.addColorStop(1,"#e6f0ea");
+    c.fillStyle = grad; c.fillRect(0,0,w,h*0.5);
+    drawMtnRow(c, w, h*0.20, h*0.40, "#8a9bb0");     // hazy Olympics
+    drawMtnRow(c, w, h*0.28, h*0.44, "#6b7f8c");
+    // green field
+    c.fillStyle="#6f9a4e"; c.fillRect(0,h*0.42,w,h*0.58);
+    // rows of lavender receding toward the viewer (converging bands of purple tufts)
+    const rows = 7;
+    for(let r=0;r<rows;r++){
+      const t = r/(rows-1);
+      const yy = h*0.46 + t*h*0.5;
+      const tuft = 3 + t*5, gap = 8 + t*10;
+      c.fillStyle = r%2 ? "#7a4fa8" : "#8f5fc0";
+      for(let x=-gap; x<w+gap; x+=gap){
+        const jitter = ((r*13+x)%5);
+        c.beginPath(); c.ellipse(x + (t*14), yy+jitter, tuft, tuft*0.6, 0, 0, 7); c.fill();
+      }
+      // a darker green stem band under each row
+      c.fillStyle="rgba(40,70,40,.25)"; c.fillRect(0, yy+tuft*0.6, w, 2+t*2);
+    }
+    // a couple of bees
+    c.fillStyle="#e8b94a";
+    c.beginPath(); c.arc(w*0.3,h*0.36,2,0,7); c.arc(w*0.62,h*0.3,2,0,7); c.fill();
   } else if(key==="ferrydream"){
     const grad = c.createLinearGradient(0,0,0,h);
     grad.addColorStop(0,"#8ec9e8");
@@ -1440,14 +1466,38 @@ function drawCharacter(x,y,pal,facing,moving){
   ctx.fillStyle=pal.shirt; ctx.fillRect(cx-12,cy-6,4,9); ctx.fillRect(cx+8,cy-6,4,9);
   ctx.fillStyle=pal.skin; ctx.fillRect(cx-7,cy-20,14,12);
   ctx.fillStyle=pal.hair; ctx.fillRect(cx-8,cy-22,16,6);
+  if(pal.hairStyle==="wild"){
+    // a big bushy tangle of curls on top
+    ctx.fillStyle=pal.hair;
+    ctx.beginPath();
+    ctx.arc(cx-6,cy-22,4,0,7); ctx.arc(cx-1,cy-24,4.2,0,7);
+    ctx.arc(cx+4,cy-23,4,0,7); ctx.arc(cx+7,cy-21,3,0,7);
+    ctx.fill();
+    if(facing!=="up"){ ctx.fillRect(cx-9,cy-20,3,7); ctx.fillRect(cx+6,cy-20,3,7); } // sideburns
+  }
   if(facing!=="up"){
     ctx.fillStyle=pal.hair; ctx.fillRect(cx-8,cy-22,4,10);
     ctx.fillStyle="#1A1A1A"; ctx.fillRect(cx-4,cy-15,2,2); ctx.fillRect(cx+2,cy-15,2,2);
+    if(pal.accessory==="glasses"){
+      // big round Harry-Potter frames
+      ctx.strokeStyle="#2a2a2a"; ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.arc(cx-3,cy-14,3.1,0,7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx+3,cy-14,3.1,0,7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-0.5,cy-14); ctx.lineTo(cx+0.5,cy-14); ctx.stroke();
+    }
   }
   if(pal.accessory==="beret"){
     ctx.fillStyle="#b5482f";
     ctx.beginPath(); ctx.ellipse(cx,cy-23,9,5,0,0,7); ctx.fill();
     ctx.fillRect(cx+6,cy-27,2,3);
+  }
+  if(pal.accessory==="chrismahawk"){
+    // shaggy long hippie locks down both sides...
+    ctx.fillStyle=pal.hair;
+    ctx.fillRect(cx-9,cy-21,4,16); ctx.fillRect(cx+5,cy-21,4,16);
+    // ...and the green-and-red Christmas mohawk crest
+    const crest = ["#c0392b","#2e7d32","#c0392b","#2e7d32","#c0392b"];
+    for(let i=0;i<5;i++){ ctx.fillStyle=crest[i]; ctx.fillRect(cx-2, cy-25-i*3, 4, 3); }
   }
   if(pal.accessory==="cap"){
     ctx.fillStyle="#3a6a8a";
@@ -1457,10 +1507,31 @@ function drawCharacter(x,y,pal,facing,moving){
 }
 
 /* ---------- Rendering ---------- */
+function drawSpotMarker(cx, topY){
+  // an unmistakable bobbing "check this out" chevron above a playable spot
+  const bob = Math.sin(Date.now()/260 + cx*0.05)*2.2;
+  const y = topY - 3 + bob;
+  ctx.fillStyle = "rgba(0,0,0,.35)";
+  ctx.beginPath(); ctx.moveTo(cx-6,y-7); ctx.lineTo(cx+6,y-7); ctx.lineTo(cx,y+2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#E8B94A";
+  ctx.beginPath(); ctx.moveTo(cx-5,y-7); ctx.lineTo(cx+5,y-7); ctx.lineTo(cx,y+1); ctx.closePath(); ctx.fill();
+}
+function drawInteractiveMarkers(){
+  const seen = new Set();
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const ch = tileAt(c,r);
+    if(!INTERACTIVE.has(ch)) continue;
+    // one marker per multi-tile zone (pier/dock) so it reads as a single place
+    if(ZONE_CHARS.has(ch)){ if(seen.has(ch)) continue; seen.add(ch); }
+    drawSpotMarker(c*TILE+TILE/2, r*TILE);
+  }
+  (NPCS[state.mapKey]||[]).forEach(npc=> drawSpotMarker((npc.col+0.5)*TILE, npc.row*TILE));
+}
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTileBg(c,r,tileAt(c,r));
   if(state.mapKey==="lostmountain") drawLostMountainCritters();
+  drawInteractiveMarkers();
   const npcList = NPCS[state.mapKey] || [];
   npcList.forEach(npc=>{
     drawCharacter((npc.col+0.5)*TILE, (npc.row+0.5)*TILE, npc.pal, "down", false);
@@ -1854,7 +1925,7 @@ document.getElementById("soundBtn").addEventListener("click", ()=>{
 
 function updateSidekickButtons(){
   document.getElementById("ryanBtn").classList.toggle("hidden", !(state.mapKey==="pawaterfront" && state.ryanNPC.present));
-  const showDream = !!state.flags.foundLavender && (state.flags.lavenderCharges||0) > 0;
+  const showDream = !!state.flags.lavenderUnlocked && (state.flags.lavenderCharges||0) > 0;
   document.getElementById("dreamBtn").classList.toggle("hidden", !showDream);
 }
 function enterLostMountain(){
@@ -2797,23 +2868,38 @@ function openCohoDock(){
   showModal("COHO FERRY DOCK", pick(lines), [{text:"Someday",cls:"gold"}]);
 }
 function openLavender(){
-  if(!state.flags.foundLavender){
+  // Until you deliberately chase the funny smell, this is just a lovely lavender farm.
+  if(!state.flags.lavenderUnlocked){
     state.flags.foundLavender = true;
-    state.flags.lavenderCharges = 3;
-    document.getElementById("dreamBtn").classList.remove("hidden");
-    showModal("PURPLE HAZE LAVENDER","You wander into the rows just to see what the fuss is about. The air out here does something. Everything goes soft at the edges, a little purple. When you blink, you could be somewhere else entirely — if you wanted. It won't hold forever — a few good trips, maybe, before it wanders off somewhere else.",
-      [{text:"...where am I",cls:"gold",onClick:openDreamOverlay}]);
-  } else if((state.flags.lavenderCharges||0)<=0){
+    showModal("PURPLE HAZE LAVENDER FARM",
+      "Rows and rows of it off Bell Bottom Road, the Olympic Mountains parked behind the fields like a postcard nobody bothered to sell. The whole place hums — bees, heat, that heavy purple smell you can almost taste. Genuinely one of the nicest spots in Sequim.<br><br>Though... there's another smell under the lavender. Sharper. Drifting out of the back rows.",
+      [
+        {text:"Just wander the rows", cls:"gold"},
+        {text:"Chase that funny smell…", cls:"rust", onClick:unlockLavender}
+      ], "lavenderfarm");
+    return;
+  }
+  if((state.flags.lavenderCharges||0)<=0){
     // Re-found after a drift — the patch recharges.
     state.flags.lavenderCharges = 3;
     state.flags.lavenderDrifted = false;
     document.getElementById("dreamBtn").classList.remove("hidden");
     refreshHud();
-    showModal("PURPLE HAZE LAVENDER","There it is again — the same patch, new spot, humming faintly like it wandered off and is a little sheepish about being found. The air goes soft and purple. It feels full again: three good trips, maybe, before it drifts off once more.",
+    showModal("PURPLE HAZE","There it is again — same funny smell, new spot, humming faintly like it wandered off and is a little sheepish about being found. The air goes soft and purple. It feels full again: three good trips, maybe, before it drifts off once more.",
       [{text:"...okay",cls:"gold",onClick:openDreamOverlay}]);
-  } else {
-    openDreamOverlay();
+    return;
   }
+  openDreamOverlay();
+}
+function unlockLavender(){
+  state.flags.lavenderUnlocked = true;
+  state.flags.foundLavender = true;
+  state.flags.lavenderCharges = 3;
+  document.getElementById("dreamBtn").classList.remove("hidden");
+  refreshHud();
+  showModal("PURPLE HAZE",
+    "You follow it into the back rows and the whole world goes soft at the edges, a little purple. When you blink, you could be somewhere else entirely — anywhere, really — if you wanted. It won't hold forever: a few good trips, maybe, before it drifts off somewhere new.",
+    [{text:"...where am I",cls:"gold",onClick:openDreamOverlay}]);
 }
 function openPool(){
   // Your own Wonder: you've become enough of a retiree to earn the capstone.
@@ -3668,7 +3754,7 @@ const MEMORY_ITEMS = [
   {label:"Survived a lecture (donut cushion included)", check:()=>!!state.flags.classroomVisited},
   {label:"Counted seagulls at the pier", check:()=>(state.flags.seagullBest||0)>0},
   {label:"Piloted the ferry through Puget Sound", check:()=>(state.flags.ferryGameBest||0)>0},
-  {label:"Found something strange at the lavender farm", check:()=>!!state.flags.foundLavender},
+  {label:"Chased the funny smell at the lavender farm", check:()=>!!state.flags.lavenderUnlocked},
   {label:"Witnessed the kinetic race chaos", check:()=>!!state.flags.kineticRaceSeen},
   {label:"Walked the old Rainier mill site", check:()=>!!state.flags.millSiteVisited},
   {label:"Hung out with Carly", check:()=>!!state.flags.carlyBallTouched},
@@ -3967,22 +4053,34 @@ function drawMiniChar(canvasEl,pal){
   c.fillStyle=pal.shirt; c.fillRect(-7,-7,14,10);
   c.fillStyle=pal.skin; c.fillRect(-5,-15,10,9);
   c.fillStyle=pal.hair; c.fillRect(-6,-17,12,5);
+  if(pal.hairStyle==="wild"){
+    c.fillStyle=pal.hair;
+    c.beginPath(); c.arc(-4,-18,3,0,7); c.arc(0,-19,3.2,0,7); c.arc(4,-18,3,0,7); c.fill();
+  }
+  if(pal.accessory==="glasses"){
+    c.strokeStyle="#2a2a2a"; c.lineWidth=1;
+    c.beginPath(); c.arc(-2.5,-9,2.2,0,7); c.stroke();
+    c.beginPath(); c.arc(2.5,-9,2.2,0,7); c.stroke();
+  }
   if(pal.accessory==="beret"){ c.fillStyle="#b5482f"; c.beginPath(); c.ellipse(0,-18,7,4,0,0,7); c.fill(); }
+  if(pal.accessory==="chrismahawk"){
+    c.fillStyle=pal.hair; c.fillRect(-7,-16,3,13); c.fillRect(4,-16,3,13);
+    const crest=["#c0392b","#2e7d32","#c0392b","#2e7d32"];
+    for(let i=0;i<4;i++){ c.fillStyle=crest[i]; c.fillRect(-2,-20-i*3,4,3); }
+  }
   c.restore();
 }
 drawMiniChar(document.querySelector("#pickJesse canvas"), PALETTE.jesse);
 drawMiniChar(document.querySelector("#pickLucas canvas"), PALETTE.lucas);
 
-document.getElementById("pickJesse").onclick = ()=>{
-  state.character="jesse";
-  document.getElementById("pickJesse").classList.add("selected");
-  document.getElementById("pickLucas").classList.remove("selected");
-};
-document.getElementById("pickLucas").onclick = ()=>{
-  state.character="lucas";
-  document.getElementById("pickLucas").classList.add("selected");
-  document.getElementById("pickJesse").classList.remove("selected");
-};
+function highlightPick(char){
+  state.character = char;
+  document.getElementById("pickJesse").classList.toggle("selected", char==="jesse");
+  document.getElementById("pickLucas").classList.toggle("selected", char==="lucas");
+}
+// One tap on a character IS the start — no separate Start press needed.
+document.getElementById("pickJesse").onclick = ()=>{ highlightPick("jesse"); startGame(); };
+document.getElementById("pickLucas").onclick = ()=>{ highlightPick("lucas"); startGame(); };
 function showTempHint(html,delay){
   const hint = document.getElementById("introHint");
   hint.querySelector(".box").innerHTML = html;
@@ -3993,7 +4091,8 @@ function showTempHint(html,delay){
     setTimeout(()=>hint.classList.add("hidden"),1000);
   }, delay||4500);
 }
-document.getElementById("startBtn").onclick = ()=>{
+function startGame(){
+  if(state.gameStarted) return;
   if(state.character==="lucas"){
     state.mapKey = "sequim";
     state.px = 13.5*TILE; state.py = 1.5*TILE;
@@ -4012,8 +4111,18 @@ document.getElementById("startBtn").onclick = ()=>{
   ensureAudio();
   startMusic();
 
-  showTempHint("Arrows / WASD, the pad below, or drag on the screen to move.<br>Walk onto a glowing spot to check it out.", 4500);
-};
+  showTempHint("Arrows / WASD, the pad below, or drag on the screen to move.<br>Anything with a bobbing gold ▾ arrow is playable — walk onto it to check it out.", 4500);
+}
+// START button + keyboard for anyone not tapping: ←/→ choose, Enter starts.
+document.getElementById("startBtn").onclick = startGame;
+window.addEventListener("keydown", e=>{
+  if(state.gameStarted) return;
+  const titleUp = !document.getElementById("titleScreen").classList.contains("hidden");
+  if(!titleUp) return;
+  if(e.key==="ArrowLeft"){ highlightPick("jesse"); e.preventDefault(); }
+  else if(e.key==="ArrowRight"){ highlightPick("lucas"); e.preventDefault(); }
+  else if(e.key==="Enter"){ startGame(); e.preventDefault(); }
+});
 
 /* ---------- Orientation screen + restart ---------- */
 document.getElementById("orientNewBtn").addEventListener("click", ()=>{
@@ -4078,6 +4187,10 @@ function resumeGame(data){
   // migrate pre-update saves: give an already-found patch a fresh set of charges
   if(state.flags.foundLavender && typeof state.flags.lavenderCharges !== "number"){
     state.flags.lavenderCharges = 3;
+  }
+  // migrate: anyone who'd already found the old always-on patch keeps the unlock
+  if(state.flags.foundLavender && typeof state.flags.lavenderUnlocked !== "boolean"){
+    state.flags.lavenderUnlocked = true;
   }
   document.getElementById("orientationScreen").classList.add("hidden");
   document.getElementById("titleScreen").classList.add("hidden");
