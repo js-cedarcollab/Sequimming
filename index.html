@@ -2526,8 +2526,7 @@ function refreshHud(){
 }
 function getContextualHint(){
   if(!state.companion.joined){
-    const where = state.character==="jesse" ? "Sequim" : "Lost Mountain";
-    return `Find your car and drive to ${where} to meet up with ${charName(otherCharacter())}.`;
+    return `Find your car and drive down to Sequim to meet up with ${charName(otherCharacter())}.`;
   }
   if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
   if(state.gas < 15) return "Getting low on gas — look for a gas station.";
@@ -3105,16 +3104,17 @@ function travelTo(dest,cost){
   if(advanceConcertWindow()) return;
   concertWindowCheck();
 }
-// Your buddy lives in the other guy's home town. First time you get there, you catch up.
-function companionHomeMap(){ return state.character==="jesse" ? "sequim" : "lostmountain"; }
+// Sequim's the shared hub — Lost Mountain's only road leads there, and it's Lucas's
+// home base. So you two always meet up in Sequim: Jesse drives down to it, Lucas is
+// already there when Jesse rattles into town.
 function checkCompanionMeetup(){
-  if(state.companion.joined || state.mapKey !== companionHomeMap()) return false;
+  if(state.companion.joined || state.mapKey !== "sequim") return false;
   state.companion.joined = true;
   state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
   updateSidekickButtons();
   const body = state.character==="jesse"
     ? "And there's Lucas — chrismahawk and all, leaning on Diane's car in the Sunny Farms lot like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
-    : "The drive up Lost Mountain takes approximately forever, and then there's Jesse on the porch, glasses catching the light, already halfway through a story you missed the beginning of. Good to see him. \"...anyway,\" he says, standing up. \"Let's go.\"";
+    : "You're barely into town before Jesse's beat-up car comes rattling down off Lost Mountain and swings into the Sunny Farms lot, Jesse leaning out the window mid-sentence — glasses catching the light, wild hair, already halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
   showModal("GOOD TO SEE YOU", body, [{text:"Let's go",cls:"gold"}]);
   return true;
 }
@@ -4101,7 +4101,6 @@ function startGame(){
     state.px = 3.5*TILE; state.py = 3.5*TILE;
     enterLostMountain();
   }
-  // Your buddy's with you from the jump — start them at your side, not the corner.
   state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
@@ -4114,6 +4113,9 @@ function startGame(){
   startMusic();
 
   showTempHint("Arrows / WASD, the pad below, or drag on the screen to move.<br>Anything with a bobbing gold ▾ arrow is playable — walk onto it to check it out.", 4500);
+  // Lucas already starts in Sequim, so he meets Jesse right away; Jesse meets Lucas
+  // once he's driven down off the mountain.
+  checkCompanionMeetup();
 }
 // START button + keyboard for anyone not tapping: ←/→ choose, Enter starts.
 document.getElementById("startBtn").onclick = startGame;
