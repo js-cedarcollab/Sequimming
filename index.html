@@ -228,7 +228,10 @@
     <div id="orientationScreen" class="overlay">
       <div class="card" style="max-width:480px;text-align:center;">
         <h1 style="font-size:20px;">HOW THIS WORKS</h1>
-        <div class="small" style="text-align:left;line-height:1.5;margin:10px 0;">
+        <div class="small" style="text-align:left;line-height:1.5;margin:10px 0 6px;padding:8px 10px;border:2px solid var(--gold);border-radius:4px;background:rgba(232,185,74,.08);">
+          You're a Running Start kid trying to get off the Olympic Peninsula — and there's <b>more than one way out</b>. Graduate for real, drop out cool after five shows, become champion of a town, or take a certain classmate's offer. Everything else is fuel for the trip. The 📓 Memory Book keeps score of all four.
+        </div>
+        <div class="small" style="text-align:left;line-height:1.5;margin:6px 0 10px;">
           • Walk around, collect quarters (◉) — pizza and records too<br>
           • Gas stations turn quarters into gas so you can drive between towns<br>
           • Legion Hall's always open for a show; Seattle and the Gorge only show up for a little while, so watch the banner up top when one opens<br>
@@ -319,7 +322,7 @@
     <div id="dreamOverlay" class="overlay hidden" style="background:radial-gradient(circle,#6a3f8a,#241531 75%);">
       <div class="card" style="max-width:460px;text-align:center;background:#f1e9d2;max-height:88vh;overflow:auto;">
         <h2 style="color:#6a3f8a;">???</h2>
-        <p class="small">The lavender's doing something. Where to?</p>
+        <p class="small" id="dreamSubtitle">The lavender's doing something. Where to?</p>
         <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:8px;">Key Locations</div>
         <div id="dreamGridLocations" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;"></div>
         <div class="small" style="text-align:left;font-weight:bold;color:#6a3f8a;margin-top:6px;">Special Spots &amp; Games</div>
@@ -359,8 +362,9 @@
         <div id="memPaneCrushes" class="memPane hidden"></div>
         <div id="memPaneCiv" class="memPane hidden"></div>
         <div id="memPaneSpending" class="memPane hidden"></div>
+        <div id="waysOut"></div>
         <div id="graduationProgress" class="small" style="text-align:left;color:#5a5340;margin:4px 0;"></div>
-        <div class="btnRow"><button class="btn gold" id="memCloseBtn">Close</button><button class="btn" id="endSummerBtn">🌅 End the Summer</button><button class="btn" id="graduationBtn">🎓 Graduation Day</button><button class="btn rust" id="resetProgressBtn">🔄 Restart Game</button></div>
+        <div class="btnRow"><button class="btn gold" id="memCloseBtn">Close</button><button class="btn" id="endSummerBtn">🌅 End the Summer</button><button class="btn" id="graduationBtn">🎓 Graduation Day</button><button class="btn hidden" id="ginoOfferBtn">🎩 Take Gino's Offer</button><button class="btn rust" id="resetProgressBtn">🔄 Restart Game</button></div>
       </div>
     </div>
   </div>
@@ -380,7 +384,7 @@
       <div id="hint">Glowing spots are places to check out. Find your car to drive somewhere new.</div>
     </div>
   </div>
-  <footer class="pixel" style="font-size:8px;">LOST MTN · SEQUIM · PENINSULA COLLEGE · PORT TOWNSEND</footer>
+  <footer class="pixel" style="font-size:8px;">LOST MTN · SEQUIM · COLLEGE · PA WATERFRONT · PORT TOWNSEND</footer>
 </div>
 
 <script>
@@ -558,7 +562,9 @@ const state = {
     ninaChaseCooldown:0, ninaChaseSeen:false, aggroCooldown:0, waterfrontPierVisited:false, cohoVisited:false,
     waterfrontTrailVisited:false, booksellerVisited:false, shoeStoreVisited:false, cafesVisited:false,
     trebuchetFired:false, poolWonderDone:false, raceWonderDone:false,
-    dungenessVisited:false
+    dungenessVisited:false,
+    ginoFavors:0, ginoFavorCooldown:0, ginoOfferUnlocked:false, ginoEscape:false,
+    lavenderCharges:0, lavenderUses:0, lavenderDrifted:false
   },
   civVisited:{},
   wonders:{ sequim:false, porttownsend:false, hick:false },
@@ -703,19 +709,6 @@ const RYAN_LINES = [
   "\"I've almost got the trebuchet load-bearing,\" Ryan reports. Nobody asked for an update. He gave one anyway."
 ];
 
-const COMPANION_LINES = [
-  "\"You ever notice how weird Taco Bell parking lots are at night?\"",
-  "\"I give this car six more months, tops.\"",
-  "\"We should burn a CD before we go anywhere else.\"",
-  "\"If we skip lunch we can almost afford a whole tank.\"",
-  "\"Hacky sack's basically a sport if you squint.\"",
-  "\"Someone already burned the new album onto a CD. Obviously.\"",
-  "\"I'm not saying we should drive to the Gorge tonight. I'm just saying we could.\"",
-  "\"Quarters. Always quarters. Feels like a part-time job at this point.\"",
-  "\"If I learn one more Kansas riff I'm basically starting a band.\"",
-  "\"We should just move to Port Townsend and run the record store. Full plan. I've thought about it.\""
-];
-
 const CD_POOL = [
   "Outkast — Stankonia",
   "The Offspring — Americana",
@@ -743,13 +736,6 @@ const SCENES = {
     "The tide's way out, so you walk the flats hunting Dungeness crab the town's named for, come up with exactly one and a half crabs and a boot, and let all of it go. The strait just keeps going, flat and silver, all the way to a Canada you can almost see.",
     "You make it maybe two miles down the spit before the wind decides against you, so you build a driftwood fort instead and argue about whether you could see Victoria from here if the haze ever lifted. You cannot. You look anyway.",
     "Bald eagles working the tideline, a seal head bobbing up to judge you, the lighthouse blinking way off at the end like it's keeping your place. You skip lunch to afford the gas out here and don't regret it for a second."
-  ]},
-  papier: { title:"PA WATERFRONT", flag:"paPierVisited", image:"papier", lines:[
-    "You end up on the pier with lunch from somewhere forgettable, half-listening to CBC Radio Victoria drift in and out, watching the boats.",
-    "You walk the whole waterfront and back for no reason, just talking.",
-    "You sit on the pier long enough that the tide visibly changes.",
-    "The Coho's coming in from Victoria, and you both watch it dock like it's arriving from somewhere important — which, compared to here, it kind of is. Distant Victoria: forever a rumor of a bigger life just across the water.",
-    "The little art gallery's open, mostly empty, same as the acres of parking around it built for crowds that never quite show. You wander through anyway. It's actually not bad."
   ]}
 };
 
@@ -1143,6 +1129,42 @@ function drawSceneImage(canvasEl, key){
     c.fillRect(w*0.79,h*0.19,4,7);
     c.strokeStyle="#e8b94a"; c.lineWidth=1;
     c.beginPath(); c.moveTo(w*0.81,h*0.19); c.lineTo(w*0.81,h*0.28); c.stroke();
+  } else if(key==="ginoescape"){
+    // night: a slick black car boarding the late ferry, distant city lights across the water
+    const grad = c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,"#141026");
+    grad.addColorStop(0.55,"#241a3a");
+    grad.addColorStop(1,"#3a2a4a");
+    c.fillStyle = grad; c.fillRect(0,0,w,h);
+    // a scatter of stars
+    c.fillStyle="#e9e4d6";
+    for(let i=0;i<28;i++){ const sx=(i*53)%w, sy=(i*31)%Math.floor(h*0.34); c.fillRect(sx,sy,1,1); }
+    // the far shore — a city skyline with warm lit windows
+    c.fillStyle="#0f0c1a";
+    for(let i=0;i<9;i++){
+      const bw=w/9, bh=h*(0.14+((i*41)%5)*0.05);
+      c.fillRect(i*bw, h*0.46-bh, bw-2, bh);
+    }
+    c.fillStyle="#e8b94a";
+    for(let i=0;i<9;i++){
+      const bw=w/9;
+      for(let r=0;r<3;r++){ if((i*7+r*13)%3) c.fillRect(i*bw+4+(r%2)*6, h*0.44-((i*41)%5)*0.05*h+r*7, 2, 3); }
+    }
+    // the water, with a broken column of reflected light
+    c.fillStyle="#1a2540"; c.fillRect(0,h*0.46,w,h*0.34);
+    c.fillStyle="rgba(232,185,74,.25)";
+    for(let i=0;i<6;i++){ c.fillRect(w*0.5-3, h*0.48+i*11, 6+((i%2)*4), 3); }
+    // ferry deck, foreground
+    c.fillStyle="#2a2a30"; c.fillRect(0,h*0.78,w,h*0.22);
+    c.fillStyle="#e8b94a"; for(let i=0;i<Math.floor(w/26);i++){ c.fillRect(6+i*26, h*0.78, 10, 2); } // deck edge lights
+    // the black car — long, low, headlights on
+    c.fillStyle="#0c0c10"; c.fillRect(w*0.30,h*0.64,w*0.40,h*0.13);
+    c.fillStyle="#141418"; c.fillRect(w*0.36,h*0.56,w*0.26,h*0.09);
+    c.fillStyle="#3a3f4a"; c.fillRect(w*0.38,h*0.575,w*0.22,h*0.055); // tinted glass
+    c.fillStyle="#f4e9c8"; c.beginPath(); c.arc(w*0.315,h*0.71,3.5,0,7); c.fill(); // headlight glow
+    c.fillStyle="rgba(244,233,200,.25)"; c.beginPath(); c.moveTo(w*0.30,h*0.70); c.lineTo(w*0.30,h*0.72); c.lineTo(w*0.14,h*0.78); c.lineTo(w*0.14,h*0.74); c.closePath(); c.fill();
+    c.fillStyle="#0a0a0c"; c.beginPath(); c.arc(w*0.37,h*0.77,5,0,7); c.arc(w*0.63,h*0.77,5,0,7); c.fill();
+    c.fillStyle="#c94f3f"; c.fillRect(w*0.68,h*0.68,3,4); // one red tail light
   } else if(key==="kineticrace"){
     const grad = c.createLinearGradient(0,0,0,h);
     grad.addColorStop(0,"#a8c8d8"); grad.addColorStop(1,"#8a9a6a");
@@ -1464,6 +1486,10 @@ function update(){
      && Date.now()>state.flags.ninaChaseCooldown && Math.random()<0.0006){
     triggerNinaChase();
   }
+  if(state.mapKey==="campus" && (state.flags.gino||0)>=2 && (state.flags.ginoFavors||0)<3
+     && !state.flags.ginoOfferUnlocked && Date.now()>state.flags.ginoFavorCooldown && Math.random()<0.0005){
+    triggerGinoFavor();
+  }
   if(isKingOfAny() && Date.now()>(state.flags.aggroCooldown||0) && Math.random()<0.0004){
     triggerCivAggro();
   }
@@ -1544,6 +1570,7 @@ function handleSpecial(ch,col,row){
 
 function interactNpc(npc){
   document.getElementById("locLabel").textContent = npc.name;
+  if(npc.id==="gino"){ interactGino(); return; }
   const stage = state.flags[npc.stageFlag] || 0;
   const d = NPC_DIALOGUE[npc.id];
   const stages = npc.stages || 3;
@@ -1617,6 +1644,75 @@ function triggerMomPopIn(){
   }
 }
 
+/* ---------- Gino: the money way off the peninsula (implied, never on-screen criminal) ---------- */
+const GINO_FAVORS = [
+  {
+    setup:"Gino presses a thick manila envelope into your hands, sealed with what looks like actual wax. \"Drop this at the marina. Slip 14. Don't look inside, don't make conversation, don't be memorable.\" It is genuinely impossible to be less memorable than two teenagers in a dying hatchback, so you're qualified.",
+    a:{label:"Slip 14, no questions", line:"You leave it on the seat of a boat that has, as far as you can tell, never once touched water. A man in a tracksuit nods at you exactly one time. You nod back. The whole thing takes four seconds and you think about it for a week."},
+    b:{label:"Hold it up to the light first", line:"You hold it to the sun for one guilty second, see absolutely nothing through the padding, feel deeply ashamed of yourself, and deliver it exactly as told. Slip 14. Tracksuit man. Four seconds. You do not peek again."}
+  },
+  {
+    setup:"\"Easy one,\" Gino says, which is exactly how you know it isn't. \"Dairy Queen. Guy in the corner booth, orders a Blizzard he never eats. You tell him Gino says hi. That's the whole job. That's the only thing you say.\"",
+    a:{label:"Deliver it, leave", line:"The guy in the corner sets down a Blizzard he was absolutely not eating, studies you for a long evaluating moment, and says, \"...tell Gino we're square.\" You have no idea what you just settled. Neither of you touches the Blizzard. You leave. Leaving feels correct."},
+    b:{label:"Order a Blizzard for cover", line:"You figure a Blizzard buys cover, so you get one and deliver the line mid-bite. The corner-booth guy actually cracks a smile. \"Kid's got instincts,\" he tells no one. \"Tell Gino we're square.\" You still don't know what was square. The Blizzard, at least, was excellent."}
+  },
+  {
+    setup:"This time it's a briefcase — aluminum, cold, heavier than it has any business being. \"Hold this for one hour,\" Gino says. \"Don't open it, don't set it down anywhere dumb, don't ask. One hour, I take it back, and we never had this conversation.\" He checks his watch like it's already timing something.",
+    a:{label:"Sixty minutes, sealed", line:"You drive around with it riding shotgun like a very quiet, very expensive friend. It hums once, which you elect to interpret as the air conditioning. At exactly the hour Gino reappears out of nowhere, takes it, and is gone. You feel like you passed a test nobody read you the rules to."},
+    b:{label:"One gentle shake", line:"You give it exactly one cautious shake, hear nothing, feel obscurely relieved, and spend the next fifty-nine minutes not doing that again. Gino materializes at the hour mark, weighs the case in one hand, gives you a look that says he knows you shook it, and says nothing at all. Somehow the nothing is the price of the shaking."}
+  }
+];
+function triggerGinoFavor(){
+  state.flags.ginoFavorCooldown = Date.now() + 60000;
+  const n = state.flags.ginoFavors||0;
+  const fav = GINO_FAVORS[Math.min(n, GINO_FAVORS.length-1)];
+  const pay = [15,25,40][Math.min(n,2)];
+  const resolve = (key)=>{
+    state.flags.ginoFavors = (state.flags.ginoFavors||0)+1;
+    gainQuarters(pay); refreshHud();
+    const now = state.flags.ginoFavors;
+    const body = fav[key].line +
+      `<br><br><span class='small'>+${pay} quarters — the money just appears; everyone stays very calm about it. (${Math.min(now,3)}/3 favors)</span>`;
+    showModal("A FAVOR, HANDLED", body, [{text:"Don't ask questions", cls:"gold",
+      onClick:()=>{ if(now>=3 && !state.flags.ginoOfferUnlocked) ginoMakeOffer(); }}]);
+  };
+  showModal("GINO NEEDS A THING", fav.setup, [
+    {text:fav.a.label, cls:"gold", onClick:()=>resolve("a")},
+    {text:fav.b.label, onClick:()=>resolve("b")}
+  ]);
+}
+function ginoMakeOffer(){
+  state.flags.ginoOfferUnlocked = true;
+  playFanfare(); refreshHud();
+  showModal("THE OFFER",
+    "Gino doesn't hand you anything this time. He just looks at you a while, then out at the whole small gray sweep of the peninsula, like he's appraising it and finding it wanting. \"You've been solid,\" he says. \"The family notices solid.\" A pause you could park a car in. \"You want out? Off this rock, for good — first class, no forwarding address? Say the word. We take care of our own.\" He lets it hang there, and you get the distinct sense that the word, once said, doesn't come back.<br><br><span class='small'>\"🎩 Take Gino's Offer\" is now waiting in your 📓 Memory Book, whenever you're ready to leave.</span>",
+    [{text:"...I'll think about it",cls:"gold"}]);
+}
+function interactGino(){
+  const d = NPC_DIALOGUE.gino;
+  const stage = state.flags.gino||0;
+  if(stage===0){
+    state.flags.gino = 1;
+    showModal("GINO", d.first[0], [{text:"...",cls:"gold"}]);
+    return;
+  }
+  if(stage===1){
+    state.flags.gino = 2;
+    gainQuarters(5); refreshHud();
+    showModal("GINO", d.date, [{text:"Nice",cls:"gold"}]);
+    return;
+  }
+  if(state.flags.ginoEscape){ showModal("GINO", pick(d.repeat), [{text:"Okay",cls:"gold"}]); return; }
+  if(state.flags.ginoOfferUnlocked){
+    showModal("GINO", "Gino spreads his hands. \"Offer stands. You want out, you know where the paperwork lives.\" He means the Memory Book. Somehow you're certain he means the Memory Book.", [{text:"Noted",cls:"gold"}]);
+    return;
+  }
+  if((state.flags.ginoFavors||0) < 3 && Date.now() > (state.flags.ginoFavorCooldown||0)){
+    triggerGinoFavor(); return;
+  }
+  showModal("GINO", pick(d.repeat), [{text:"Okay",cls:"gold"}]);
+}
+
 document.getElementById("civBadge").addEventListener("click", ()=>{
   openMemoryBook();
   const t = document.querySelector('.memTabBtn[data-tab="civ"]');
@@ -1629,6 +1725,8 @@ document.getElementById("soundBtn").addEventListener("click", ()=>{
 
 function updateSidekickButtons(){
   document.getElementById("ryanBtn").classList.toggle("hidden", !(state.mapKey==="pawaterfront" && state.ryanNPC.present));
+  const showDream = !!state.flags.foundLavender && (state.flags.lavenderCharges||0) > 0;
+  document.getElementById("dreamBtn").classList.toggle("hidden", !showDream);
 }
 function enterLostMountain(){
   const wasAway = !!state.flags.carlyWasAway;
@@ -1665,6 +1763,10 @@ function dreamFindLauren(){
   state.flags.laurenDream = true;
   showModal("A DREAM, AGAIN","This time it's not fuzzy at all. You know exactly who she is, somehow, even though you haven't met her yet. She's laughing at something you haven't said yet. You'd know that laugh anywhere, which makes no sense, because you don't know it yet.<br><br><span class='small'>(Her name's Lauren. You'll get there.)</span>",[{text:"Worth the wait",cls:"gold"}]);
 }
+function lavenderThinned(){
+  // Late-game the magic fades: it stops being an infinite-money cheat as you near leaving.
+  return canGraduate() || (state.flags.lavenderUses||0) >= 6;
+}
 function getDreamSpecials(){
   const specials = [
     {label:"Fort Worden", action:()=>{ closeDreamOverlay(); playScene("fortworden",0); }},
@@ -1673,16 +1775,48 @@ function getDreamSpecials(){
     {label:"Hacky Sack", action:()=>{ closeDreamOverlay(); state.flags.hackySackCooldown=0; openHackySack(); }},
     {label:"Ferry Captain", action:()=>{ closeDreamOverlay(); openFerryGame(); }},
     {label:"Count the Seagulls", action:()=>{ closeDreamOverlay(); openSeagullCount(); }},
-    {label:"Legion Hall", action:()=>dreamShow("legion")},
-    {label:"Seattle Show", action:()=>dreamShow("seattle")},
-    {label:"The Gorge", action:()=>dreamShow("gorge")},
-    {label:"+20 Quarters", action:()=>{ gainQuarters(20); floatText("+20!", state.px, state.py-30); }},
-    {label:"Full Tank", action:()=>{ state.gas=state.maxGas; refreshHud(); floatText("full tank", state.px, state.py-30); }}
+    {label:"Legion Hall", action:()=>dreamShow("legion")}
   ];
+  // The strong freebies only work while the peninsula's magic is still thick.
+  if(!lavenderThinned()){
+    specials.push(
+      {label:"Seattle Show", action:()=>dreamShow("seattle")},
+      {label:"The Gorge", action:()=>dreamShow("gorge")},
+      {label:"+20 Quarters", action:()=>{ gainQuarters(20); floatText("+20!", state.px, state.py-30); }},
+      {label:"Full Tank", action:()=>{ state.gas=state.maxGas; refreshHud(); floatText("full tank", state.px, state.py-30); }}
+    );
+  }
   if(state.character==="jesse"){
     specials.push({label:"Find Lauren", action:dreamFindLauren});
   }
   return specials;
+}
+/* Each dream-menu use spends a charge; at zero the patch drifts to a new spot in Sequim. */
+function afterLavenderUse(){
+  state.flags.lavenderUses = (state.flags.lavenderUses||0)+1;
+  state.flags.lavenderCharges = Math.max(0, (state.flags.lavenderCharges||0)-1);
+  if(state.flags.lavenderCharges<=0) driftLavender();
+}
+function driftLavender(){
+  const rows = MAPS.sequim.rows.map(r=>r.split(""));
+  for(let r=0;r<rows.length;r++) for(let cc=0;cc<rows[r].length;cc++){ if(rows[r][cc]==="z") rows[r][cc]="."; }
+  const npcTiles = new Set((NPCS.sequim||[]).map(n=>n.col+","+n.row));
+  const onSequim = state.mapKey==="sequim";
+  const pcol = Math.floor(state.px/TILE), prow = Math.floor(state.py/TILE);
+  const cands = [];
+  for(let r=0;r<rows.length;r++) for(let cc=0;cc<rows[r].length;cc++){
+    if(rows[r][cc]!==".") continue;
+    if(npcTiles.has(cc+","+r)) continue;
+    if(onSequim && cc===pcol && r===prow) continue;
+    cands.push([cc,r]);
+  }
+  if(cands.length){ const [cc,r]=cands[Math.floor(Math.random()*cands.length)]; rows[r][cc]="z"; }
+  MAPS.sequim.rows = rows.map(a=>a.join(""));
+  state.flags.lavenderDrifted = true;
+  document.getElementById("dreamBtn").classList.add("hidden");
+  if(onSequim) state.lastTileKey = null;
+  saveGame(true);
+  showTempHint("The lavender's gone quiet — it's drifted somewhere new in Sequim.", 4500);
 }
 function teleportTo(mapKey){
   closeDreamOverlay();
@@ -1705,12 +1839,21 @@ function openDreamOverlay(){
       const btn = document.createElement("button");
       btn.className = "btn gold";
       btn.textContent = spot.label;
-      btn.onclick = spot.action;
+      // Every dream-menu choice spends one charge of the patch.
+      btn.onclick = ()=>{ spot.action(); afterLavenderUse(); };
       grid.appendChild(btn);
     });
   };
   fillGrid("dreamGridLocations", TELEPORT_LOCATIONS);
   fillGrid("dreamGridSpecial", getDreamSpecials());
+  const sub = document.getElementById("dreamSubtitle");
+  if(sub){
+    const charges = state.flags.lavenderCharges||0;
+    const left = `${charges} trip${charges===1?"":"s"} left in this patch before it drifts.`;
+    sub.textContent = lavenderThinned()
+      ? `The lavender's thinner than it was — the big shortcuts don't work like they used to. ${left}`
+      : `The lavender's doing something. Where to? ${left}`;
+  }
   const puff = document.getElementById("smokePuff");
   puff.classList.remove("hidden","fadeOut");
   setTimeout(()=>puff.classList.add("fadeOut"), 350);
@@ -2003,9 +2146,17 @@ function getContextualHint(){
   if(!state.companion.joined) return "Find Taco Bell in Sequim to meet up and get the summer started.";
   if(state.concert.windowType) return "A show's on — open any car/travel menu to catch it!";
   if(state.gas < 15) return "Getting low on gas — look for a gas station.";
+  // Surface the nearest way off the peninsula as the player closes in on one.
+  if(canGraduate() && !state.flags.graduated) return "A way off the peninsula's ready — open the 📓 Memory Book to take it.";
+  if(state.flags.ginoOfferUnlocked && !state.flags.ginoEscape) return "Gino's offer is on the table — the 📓 Memory Book's got the door out.";
+  const cv = state.flags.classroomVisits||0;
+  if(cv===3) return "One more lecture at Peninsula College and you graduate for real.";
+  if(totalShowsAttended()===4) return "One more show total and you can call it School of Life.";
+  const dom = dominantCiv();
+  if(civPct(dom)>=50 && !isKingOfAny()) return `Getting deep in with the ${CIVILIZATIONS[dom].adjective.toLowerCase()}s — a few more of their spots opens a Wonder.`;
   if(state.quarters < 8) return "Explore glowing spots for quarters and stories.";
   if(state.records < 2) return "Quimper Sound in Port Townsend has records worth digging for.";
-  return "Keep exploring — dates, shows, and secrets are still out there.";
+  return "Four ways off the peninsula — the 📓 Memory Book tracks them all.";
 }
 
 /* ---- Location handlers: home base ---- */
@@ -2422,9 +2573,18 @@ function openCohoDock(){
 function openLavender(){
   if(!state.flags.foundLavender){
     state.flags.foundLavender = true;
+    state.flags.lavenderCharges = 3;
     document.getElementById("dreamBtn").classList.remove("hidden");
-    showModal("PURPLE HAZE LAVENDER","You wander into the rows just to see what the fuss is about. The air out here does something. Everything goes soft at the edges, a little purple. When you blink, you could be somewhere else entirely — if you wanted.",
+    showModal("PURPLE HAZE LAVENDER","You wander into the rows just to see what the fuss is about. The air out here does something. Everything goes soft at the edges, a little purple. When you blink, you could be somewhere else entirely — if you wanted. It won't hold forever — a few good trips, maybe, before it wanders off somewhere else.",
       [{text:"...where am I",cls:"gold",onClick:openDreamOverlay}]);
+  } else if((state.flags.lavenderCharges||0)<=0){
+    // Re-found after a drift — the patch recharges.
+    state.flags.lavenderCharges = 3;
+    state.flags.lavenderDrifted = false;
+    document.getElementById("dreamBtn").classList.remove("hidden");
+    refreshHud();
+    showModal("PURPLE HAZE LAVENDER","There it is again — the same patch, new spot, humming faintly like it wandered off and is a little sheepish about being found. The air goes soft and purple. It feels full again: three good trips, maybe, before it drifts off once more.",
+      [{text:"...okay",cls:"gold",onClick:openDreamOverlay}]);
   } else {
     openDreamOverlay();
   }
@@ -3049,6 +3209,8 @@ const MEMORY_ITEMS = [
   {label:"Met Anina", check:()=>(state.flags.anina||0)>=1},
   {label:"Met Tara", check:()=>(state.flags.tara||0)>=1},
   {label:"Got mixed up with Gino somehow", check:()=>(state.flags.gino||0)>=1},
+  {label:"Ran a favor for Gino's 'family'", check:()=>(state.flags.ginoFavors||0)>=1},
+  {label:"Took Gino's offer and left in style", check:()=>!!state.flags.ginoEscape},
   {label:"Met the Waterfront Pizza waitress", check:()=>(state.flags.waitress||0)>=1},
   {label:"Survived a lecture (donut cushion included)", check:()=>!!state.flags.classroomVisited},
   {label:"Counted seagulls at the pier", check:()=>(state.flags.seagullBest||0)>0},
@@ -3124,6 +3286,36 @@ function renderCiv(){
   }
   return html;
 }
+/* The four "ways out" — the throughline, made legible. */
+function renderWaysOut(){
+  const cv = Math.min(state.flags.classroomVisits||0, 4);
+  const shows = totalShowsAttended();
+  const king = isKingOfAny();
+  const dom = dominantCiv();
+  const favors = state.flags.ginoFavors||0;
+  const metGino = (state.flags.gino||0) >= 1;
+  const row = (icon,label,status,ready,done)=>
+    `<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:15px;${done?"color:#6a7c66;":ready?"color:var(--rust);font-weight:bold;":""}">`+
+    `<span>${icon} ${label}</span><span style="white-space:nowrap;">${status}</span></div>`;
+  let html = `<div style="border:2px solid #9a927a;border-radius:4px;padding:8px 10px;margin:8px 0;background:rgba(31,59,44,.06);">`+
+    `<div style="font-family:'Press Start 2P';font-size:9px;color:var(--forest);margin-bottom:6px;">🧭 GETTING OFF THE PENINSULA</div>`;
+  // 1 — graduate for real
+  const gradDone = state.flags.graduated && cv>=4;
+  html += row("🎓","Graduate — study 4×", gradDone?"✓ walked":`${cv}/4`, cv>=4 && !state.flags.graduated, gradDone);
+  // 2 — school of life
+  html += row("🎸","School of Life — 5 shows", state.flags.graduated&&!(cv>=4)&&!king?"✓ done":`${Math.min(shows,5)}/5`, shows>=5 && !state.flags.graduated, false);
+  // 3 — champion of a tribe
+  html += row("👑","Champion of a tribe", king?`✓ ${CIVILIZATIONS[firstKingCiv()].adjective}`:`${civPct(dom)}% ${CIVILIZATIONS[dom].adjective}`, king && !state.flags.graduated, false);
+  // 4 — Gino's offer
+  let gStatus, gReady=false, gDone=false;
+  if(state.flags.ginoEscape){ gStatus="✓ gone"; gDone=true; }
+  else if(state.flags.ginoOfferUnlocked){ gStatus="✓ offer's open"; gReady=true; }
+  else if(metGino){ gStatus=`${Math.min(favors,3)}/3 favors`; }
+  else { gStatus="meet him at the college"; }
+  html += row("🎩","Gino's offer", gStatus, gReady, gDone);
+  html += `</div>`;
+  return html;
+}
 const MEM_PANES = {moments:"memPaneMoments", mixtape:"memPaneMixtape", crushes:"memPaneCrushes", civ:"memPaneCiv", spending:"memPaneSpending"};
 function openMemoryBook(){
   document.getElementById("memPaneMoments").innerHTML = renderMoments();
@@ -3131,11 +3323,13 @@ function openMemoryBook(){
   document.getElementById("memPaneCrushes").innerHTML = renderCrushes();
   document.getElementById("memPaneCiv").innerHTML = renderCiv();
   document.getElementById("memPaneSpending").innerHTML = renderSpending();
+  document.getElementById("waysOut").innerHTML = renderWaysOut();
   const ready = canGraduate();
   const cVisits = state.flags.classroomVisits||0;
   const shows = totalShowsAttended();
   const gradBtn = document.getElementById("graduationBtn");
   gradBtn.disabled = !ready;
+  document.getElementById("ginoOfferBtn").classList.toggle("hidden", !(state.flags.ginoOfferUnlocked && !state.flags.ginoEscape));
   document.getElementById("graduationProgress").textContent = ready
     ? "🎓 Graduation is on the table — how you get off this peninsula is your call."
     : `Study 4x at Peninsula College (${cVisits}/4), catch 5 shows total (${shows}/5), OR become champion of any one civilization to unlock graduation.`;
@@ -3198,6 +3392,20 @@ function endSummer(){
   document.querySelector("#winScreen h2").textContent = heading;
   switchMusic(CONCERT_MELODY, "square", 0.07);
   drawSceneImage(document.getElementById("winScene"), sceneKey);
+  document.getElementById("winScreen").classList.remove("hidden");
+}
+function ginoEscapeEnding(){
+  if(!state.flags.ginoOfferUnlocked) return;
+  state.paused = true;
+  state.flags.ginoEscape = true;
+  refreshHud();
+  const buddy = charName(otherCharacter());
+  const flavor = `You say the word. It's a short word and it changes everything. There's no ceremony — there's a car. Black, long, idling at the Coho dock at an hour when nothing else runs, someone you've never met loading your two duffel bags like they're luggage from a better life. A first-class cabin on a ferry that isn't supposed to sail this late and sails anyway. ${buddy} rides along to the terminal, hugs you hard, and doesn't ask, because by now nobody asks. The peninsula shrinks behind you — the mountains, the fog, the whole small gray sweep of it — until it's a smudge, then a rumor, then nothing at all. Somewhere in a jacket you didn't pack is a phone number you didn't write down. You already know it's going to ring someday. You already know you're going to answer. First class the whole way out, and you don't look back. Mostly.`;
+  const txt = `${flavor}<br><br><span class="small">Favors run for the family: ${state.flags.ginoFavors} · Quarters collected: ${state.totalQuartersEver} · Records bought: ${state.records} · Trips taken: ${state.tripCount}</span>`;
+  document.getElementById("winText").innerHTML = txt;
+  document.querySelector("#winScreen h2").textContent = "BOUGHT THE TICKET OUT";
+  switchMusic(CONCERT_MELODY, "square", 0.07);
+  drawSceneImage(document.getElementById("winScene"), "ginoescape");
   document.getElementById("winScreen").classList.remove("hidden");
 }
 function totalShowsAttended(){
@@ -3366,6 +3574,10 @@ document.getElementById("graduationBtn").addEventListener("click", ()=>{
   document.getElementById("memoryOverlay").classList.add("hidden");
   graduationDay();
 });
+document.getElementById("ginoOfferBtn").addEventListener("click", ()=>{
+  document.getElementById("memoryOverlay").classList.add("hidden");
+  ginoEscapeEnding();
+});
 
 /* ---------- Persistence (localStorage — works in a normal browser tab) ---------- */
 const SAVE_KEY = "sequimming_save_v1";
@@ -3403,6 +3615,10 @@ function resumeGame(data){
   state.dragging = false; state.dragTarget = null; state.isMoving = false;
   state.keys = {up:false,down:false,left:false,right:false};
   state.gameStarted = true;
+  // migrate pre-update saves: give an already-found patch a fresh set of charges
+  if(state.flags.foundLavender && typeof state.flags.lavenderCharges !== "number"){
+    state.flags.lavenderCharges = 3;
+  }
   document.getElementById("orientationScreen").classList.add("hidden");
   document.getElementById("titleScreen").classList.add("hidden");
   document.getElementById("civBadge").classList.remove("hidden");
