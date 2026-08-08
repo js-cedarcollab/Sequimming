@@ -194,6 +194,30 @@
   }
   #ferryBoat{position:absolute;bottom:12px;left:50%;font-size:34px;transform:translateX(-50%);transition:left .1s linear;user-select:none;z-index:2;}
   .ferryObstacle{position:absolute;top:-34px;font-size:27px;transform:translateX(-50%);user-select:none;will-change:top;}
+  #ferryBg{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none;}
+
+  /* Play Catch with Carly */
+  #catchTaunt{
+    font-size:17px;color:#173a12;min-height:44px;line-height:1.2;margin:2px 0 6px;
+    background:#eef6e3;border:2px solid #7aa85a;border-radius:6px;padding:6px 8px;
+  }
+  #catchTaunt.good{color:#2a5a1a;border-color:#4a8a2a;}
+  #catchCountdown{font-family:'Press Start 2P';font-size:16px;color:var(--rust);min-height:20px;margin-bottom:4px;}
+  #catchField{
+    position:relative;height:220px;overflow:hidden;border-radius:4px;
+    background:linear-gradient(180deg,#9fd06a 0%,#7cbb50 55%,#5f9a3e 100%);
+    border:2px solid var(--ink);margin-bottom:8px;
+  }
+  #catchField:before{
+    content:"";position:absolute;left:0;right:0;top:0;height:26px;
+    background:linear-gradient(180deg,#b7ddf0,#cfe9f5);border-bottom:2px solid #9ec46a;
+  }
+  #catchCarly,#catchYou{position:absolute;font-size:30px;left:50%;transform:translateX(-50%);user-select:none;z-index:2;}
+  #catchCarly{top:24px;} #catchYou{bottom:6px;}
+  #catchLabelTop,#catchLabelBot{position:absolute;font-family:'Press Start 2P';font-size:8px;color:#173a12;left:50%;transform:translateX(-50%);}
+  #catchLabelTop{top:2px;} #catchLabelBot{bottom:64px;}
+  #catchGlove{position:absolute;left:0;right:0;background:rgba(255,255,255,.14);border-top:2px dashed rgba(255,255,255,.6);border-bottom:2px dashed rgba(255,255,255,.6);pointer-events:none;}
+  #catchBall{position:absolute;top:-26px;left:50%;font-size:22px;transform:translateX(-50%);will-change:top,left;z-index:3;}
 
   #memoryList{max-height:52vh;overflow:auto;margin:4px 0;}
   .memRow{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:16px;}
@@ -242,7 +266,7 @@
           • Walk around, collect quarters (◉) — pizza and records too<br>
           • Gas stations turn quarters into gas so you can drive between towns<br>
           • Legion Hall's always open for a show; Seattle and the Gorge only show up for a little while, so watch the banner up top when one opens<br>
-          • The more of a town you explore, the more you <i>become</i> that town — retiree, hippie, or hick. Fill a meter and its Wonder opens up<br>
+          • The more of a town you explore, the more you <i>become</i> that town — retiree, hippie, or ruffian. Fill a meter and its Wonder opens up<br>
           • 🏛️ badge tracks your tribe; 📓 Memory Book tracks everything you've found
         </div>
         <button class="btn gold pixel" id="orientNewBtn" style="font-size:13px;padding:10px 16px;">NEW GAME</button>
@@ -316,12 +340,32 @@
         <p class="small">Puget Sound runs north–south. Steer left and right (◀ ▶ or arrow keys) to dodge what's drifting down the channel. Don't ask how a car ferry is doing any of this.</p>
         <div id="ferryCountdown"></div>
         <div class="tally">Dodged: <span id="ferryScore">0</span> · Hits: <span id="ferryHits">0</span>/3</div>
-        <div id="ferryField"><div id="ferryBoat">⛴️</div></div>
+        <div id="ferryField"><canvas id="ferryBg" width="120" height="300"></canvas><div id="ferryBoat">⛴️</div></div>
         <div class="btnRow" style="justify-content:center;">
           <button class="btn rust pixel" id="ferryUpBtn" style="font-size:15px;">◀</button>
           <button class="btn rust pixel" id="ferryDownBtn" style="font-size:15px;">▶</button>
         </div>
         <button class="btn smallBtn" id="ferryCancelBtn" style="margin-top:8px;">✕ Skip</button>
+      </div>
+    </div>
+
+    <!-- Play Catch with Carly -->
+    <div id="catchOverlay" class="overlay hidden">
+      <div class="card" style="text-align:center;">
+        <h2>PLAY CATCH WITH CARLY</h2>
+        <div id="catchTaunt">—</div>
+        <div id="catchCountdown"></div>
+        <div class="tally">Pitch <span id="catchPitch">1</span> / 8 — Caught: <span id="catchCaught">0</span></div>
+        <div id="catchField">
+          <div id="catchLabelTop">CARLY ▲ ELITE</div>
+          <div id="catchCarly">🥎</div>
+          <div id="catchGlove"></div>
+          <div id="catchBall">⚾</div>
+          <div id="catchLabelBot">▼ YOU</div>
+          <div id="catchYou">🧤</div>
+        </div>
+        <button class="btn rust pixel" id="catchSwingBtn" style="font-size:14px;">CATCH! (tap / SPACE)</button>
+        <div><button class="btn smallBtn" id="catchCancelBtn" style="margin-top:8px;">✕ I give up</button></div>
       </div>
     </div>
 
@@ -571,7 +615,9 @@ const state = {
     trebuchetFired:false, poolWonderDone:false, raceWonderDone:false,
     dungenessVisited:false,
     ginoFavors:0, ginoFavorCooldown:0, ginoOfferUnlocked:false, ginoEscape:false,
-    lavenderCharges:0, lavenderUses:0, lavenderDrifted:false
+    lavenderCharges:0, lavenderUses:0, lavenderDrifted:false,
+    carlyPlayedCatch:false, carlyCatchBest:0, carlyCatchCooldown:0,
+    metLily:false, metRachel:false
   },
   civVisited:{},
   wonders:{ sequim:false, porttownsend:false, hick:false },
@@ -619,7 +665,12 @@ const NPCS = {
     {id:"waitress", col:5, row:2, name:"The Waitress", stageFlag:"waitress", stages:4,
       pal:{hair:"#3a2a1f", shirt:"#c1553b", pants:"#2a2a2a", skin:"#e3b284", accessory:null}}
   ],
-  lostmountain: []
+  lostmountain: [
+    {id:"lily", col:2, row:5, name:"Lily", stageFlag:"metLily", reward:3,
+      pal:{hair:"#4a3220", shirt:"#d98aa8", pants:"#5a6a8a", skin:"#e8c9a0", accessory:null}},
+    {id:"rachel", col:13, row:4, name:"Rachel", stageFlag:"metRachel", reward:3,
+      pal:{hair:"#141414", shirt:"#2a2a34", pants:"#1a1a1a", skin:"#e3b284", accessory:null}}
+  ]
 };
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 const NPC_DIALOGUE = {
@@ -703,6 +754,29 @@ const NPC_DIALOGUE = {
       "Carly's got approximately fourteen friends over today. You're not sure where they all sleep.",
       "\"You're being weird,\" Carly informs you, unprompted.",
       "Carly's practicing her windup against the side of the house. The side of the house is losing."
+    ]
+  },
+  lily: {
+    first: [
+      "Lily's up from the neighbors', a carrot in each pocket for the horses and one, secretly, for Carly's rabbit. \"Oh — hi!\" she says, lighting up like she's been hoping to run into you specifically. \"Are you riding with us later? Carly said maybe. You should come.\" She means it. Lily always means it.",
+      "You hear the soft clop of hooves before you see her — Lily, leading a patient old mare down the lane, brunette hair in a braid coming loose. \"She likes you already,\" Lily decides on your behalf, and the horse, to be fair, does not disagree."
+    ],
+    date: "You end up on the trail with Lily and Carly, the horses picking their own slow way through the alders. Lily hangs back to ride beside you the whole time so you won't feel left out, points out three different birds by name, and asks a question about you that's so genuinely thoughtful you don't know what to do with it. It's the most relaxed you've felt in weeks.<br><br><span class='small'>+3 quarters — Lily insisted on splitting her fair money, wouldn't hear otherwise</span>",
+    repeat: [
+      "\"Tell Carly her rabbit got into our garden again,\" Lily says, not even slightly mad. \"It's kind of an honor, honestly.\"",
+      "Lily's braiding a horse's mane and humming something soft. She waves you over just to say hi, then goes right back to it.",
+      "\"Rachel's in a mood today,\" Lily says gently, \"but she doesn't mean it. She's really sweet underneath. You just have to catch her on a good day.\""
+    ]
+  },
+  rachel: {
+    first: [
+      "Rachel looks up from the fence rail and gives you the exact up-and-down that settles your entire social standing in under a second — evidently landing on 'acceptable, barely.' \"You're Carly's,\" she says. It isn't quite a question. Black hair, zero notes, faintly terrifying, and Carly clearly worships her."
+    ],
+    date: "Rachel decides, for reasons known only to Rachel, that you're alright. This takes the form of her insulting your car with genuine craft and then quietly telling you which trail is actually worth riding and which one 'is for tourists and Lily.' Coming from Rachel, this is basically a friendship bracelet.<br><br><span class='small'>+3 quarters — 'found money,' she says, and does not explain</span>",
+    repeat: [
+      "Rachel's teaching Carly some withering comeback and Carly's writing it down. God help everyone in about two years.",
+      "\"Cute,\" Rachel says, about nothing in particular, in a tone that makes you double-check your outfit. She's already looking away.",
+      "Rachel's actually laughing at something Carly said — a real one, caught off guard. It vanishes the instant she notices you noticed."
     ]
   }
 };
@@ -1258,6 +1332,51 @@ function drawChickens(x,y){
   ctx.fillStyle="#c9843b"; ctx.beginPath(); ctx.moveTo(x+20,y+19); ctx.lineTo(x+25,y+20); ctx.lineTo(x+20,y+22); ctx.fill();
   ctx.fillStyle="#d9432f"; ctx.beginPath(); ctx.ellipse(x+13,y+15,3,3,0,0,7); ctx.fill();
 }
+/* ---- Lost Mountain critters (centered on x,y; hop/wander cosmetics) ---- */
+function critterShadow(x,y,w){ ctx.fillStyle="rgba(0,0,0,.2)"; ctx.beginPath(); ctx.ellipse(x,y+7,w,3,0,0,7); ctx.fill(); }
+function drawCat(x,y){
+  critterShadow(x,y,7);
+  ctx.fillStyle="#d98a3a";
+  ctx.fillRect(x-6,y-1,12,7);                 // body
+  ctx.fillRect(x-9,y-6,7,7);                  // head
+  ctx.beginPath(); ctx.moveTo(x-9,y-6); ctx.lineTo(x-8,y-11); ctx.lineTo(x-5,y-6); ctx.fill();  // ear
+  ctx.beginPath(); ctx.moveTo(x-5,y-6); ctx.lineTo(x-3,y-11); ctx.lineTo(x-2,y-6); ctx.fill();  // ear
+  ctx.strokeStyle="#c97a2a"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x+6,y+2); ctx.quadraticCurveTo(x+13,y-1,x+11,y-8); ctx.stroke(); // tail
+  ctx.fillStyle="#c97a2a"; ctx.fillRect(x-4,y-1,2,7); ctx.fillRect(x+1,y-1,2,7);                // stripes
+  ctx.fillStyle="#2a1f14"; ctx.fillRect(x-7,y-4,1,1); ctx.fillRect(x-4,y-4,1,1);                // eyes
+}
+function drawDog(x,y){
+  critterShadow(x,y,9);
+  ctx.fillStyle="#8a6a44";
+  ctx.fillRect(x-8,y-2,15,8);                 // body
+  ctx.fillRect(x+5,y-6,7,7);                  // head
+  ctx.fillStyle="#6a4f30"; ctx.fillRect(x+4,y-6,3,8);   // floppy ear
+  ctx.fillRect(x-9,y+3,3,5); ctx.fillRect(x+4,y+3,3,5); // legs
+  ctx.strokeStyle="#8a6a44"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x-8,y-1); ctx.lineTo(x-13,y-5); ctx.stroke(); // tail
+  ctx.fillStyle="#1a1a1a"; ctx.fillRect(x+9,y-4,1,1); ctx.fillRect(x+11,y-1,2,2);  // eye + nose
+}
+function drawRabbit(x,y){
+  critterShadow(x,y,6);
+  ctx.fillStyle="#cfc7b8";
+  ctx.beginPath(); ctx.ellipse(x,y+1,6,5,0,0,7); ctx.fill();     // body
+  ctx.fillRect(x-6,y-5,5,6);                                     // head
+  ctx.fillStyle="#bcb3a2"; ctx.fillRect(x-6,y-12,2,8); ctx.fillRect(x-3,y-12,2,8);  // ears
+  ctx.fillStyle="#f1e9d2"; ctx.beginPath(); ctx.arc(x+6,y+2,2,0,7); ctx.fill();     // tail puff
+  ctx.fillStyle="#2a1f18"; ctx.fillRect(x-5,y-3,1,1);                                // eye
+}
+function drawRooster(x,y){
+  // "Penguin," a rooster with a vendetta and a suspiciously formal color scheme
+  critterShadow(x,y,6);
+  ctx.fillStyle="#26262a"; ctx.beginPath(); ctx.ellipse(x,y+1,7,6,0,0,7); ctx.fill(); // body
+  ctx.fillStyle="#e8e3d2"; ctx.beginPath(); ctx.ellipse(x+1,y+3,4,3,0,0,7); ctx.fill(); // white belly
+  ctx.fillStyle="#26262a"; ctx.fillRect(x-8,y-6,5,6);                                   // head
+  ctx.fillStyle="#d9432f"; ctx.fillRect(x-8,y-9,5,3);                                   // comb
+  ctx.fillStyle="#d9432f"; ctx.fillRect(x-7,y-2,2,2);                                   // wattle
+  ctx.fillStyle="#e8b94a"; ctx.beginPath(); ctx.moveTo(x-8,y-4); ctx.lineTo(x-12,y-3); ctx.lineTo(x-8,y-2); ctx.fill(); // beak
+  ctx.strokeStyle="#3a6a4a"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x+6,y-1); ctx.quadraticCurveTo(x+13,y-4,x+9,y-10); ctx.stroke(); // tail feather
+  ctx.fillStyle="#111"; ctx.fillRect(x-6,y-5,1,1);
+}
 function drawTarget(x,y){
   ctx.strokeStyle="#cf3f3f"; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(x+16,y+16,10,0,7); ctx.stroke();
@@ -1341,6 +1460,7 @@ function drawCharacter(x,y,pal,facing,moving){
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTileBg(c,r,tileAt(c,r));
+  if(state.mapKey==="lostmountain") drawLostMountainCritters();
   const npcList = NPCS[state.mapKey] || [];
   npcList.forEach(npc=>{
     drawCharacter((npc.col+0.5)*TILE, (npc.row+0.5)*TILE, npc.pal, "down", false);
@@ -1417,6 +1537,8 @@ function update(){
     state.companion.y += (target.y-state.companion.y)*0.15;
     state.companion.moving = Math.hypot(state.companion.x-prevX, state.companion.y-prevY) > 0.12;
   }
+
+  if(state.mapKey==="lostmountain") updateLostMountainCritters();
 
   if(state.mapKey==="lostmountain" && !state.carly.away){
     if(!state.carly.appeared && Date.now()>state.carly.arriveTime){
@@ -1743,6 +1865,56 @@ function enterLostMountain(){
   state.carly.justReturned = (!away && wasAway);
   state.carly.arriveTime = Date.now() + 3000 + Math.random()*2000;
   state.flags.carlyWasAway = away;
+  initLostMountainCritters();
+}
+/* ---- The Lost Mountain menagerie: cat, neighbor dog, rabbit, hens, and Penguin ---- */
+let lmCritters = [];
+function randomWalkableLM(){
+  const rows = MAPS.lostmountain.rows;
+  for(let i=0;i<24;i++){
+    const c = 1+Math.floor(Math.random()*14), r = 1+Math.floor(Math.random()*10);
+    if(!SOLID.has(rows[r][c])) return [c,r];
+  }
+  return [7,6];
+}
+function initLostMountainCritters(){
+  const defs = [
+    {type:"cat",    speed:0.012, retarget:220},
+    {type:"dog",    speed:0.022, retarget:130},
+    {type:"rabbit", speed:0.05,  retarget:80},
+    {type:"hen",    speed:0.010, retarget:160},
+    {type:"hen",    speed:0.010, retarget:190},
+    {type:"rooster",speed:0.016, retarget:150}
+  ];
+  lmCritters = defs.map(d=>{
+    const [c,r] = randomWalkableLM();
+    const px=(c+0.5)*TILE, py=(r+0.5)*TILE;
+    return {type:d.type, x:px, y:py, tx:px, ty:py, speed:d.speed, retarget:d.retarget, timer:Math.floor(Math.random()*d.retarget)};
+  });
+}
+function updateLostMountainCritters(){
+  if(!lmCritters.length) initLostMountainCritters();
+  lmCritters.forEach(cr=>{
+    cr.timer++;
+    if(cr.timer > cr.retarget){
+      cr.timer = 0;
+      const [c,r] = randomWalkableLM();
+      cr.tx = (c+0.5)*TILE; cr.ty = (r+0.5)*TILE;
+    }
+    // the rabbit moves in little hops instead of gliding
+    const rate = cr.type==="rabbit" ? (cr.timer % 22 < 8 ? cr.speed : 0) : cr.speed;
+    cr.x += (cr.tx - cr.x) * rate;
+    cr.y += (cr.ty - cr.y) * rate;
+  });
+}
+function drawLostMountainCritters(){
+  lmCritters.forEach(cr=>{
+    if(cr.type==="cat") drawCat(cr.x,cr.y);
+    else if(cr.type==="dog") drawDog(cr.x,cr.y);
+    else if(cr.type==="rabbit") drawRabbit(cr.x,cr.y);
+    else if(cr.type==="rooster") drawRooster(cr.x,cr.y);
+    else drawChickens(cr.x-14,cr.y-20);
+  });
 }
 document.getElementById("dreamBtn").addEventListener("click", openDreamOverlay);
 
@@ -1895,6 +2067,41 @@ const CARLY_LOOT_LINES = [
   "Carly's back from regionals, still half in uniform, dragging a duffel bag that smells like a gymnasium and victory. \"We took second,\" she announces, like it's nothing, and drops a fistful of tournament swag in your hands — pins, a team sticker, and actual cash from a betting pool nobody's explaining.<br><br><span class='small'>+8 quarters — tournament loot</span>",
   "Carly gets back from state with a trophy she immediately hands off to you because her arms are tired. \"Don't drop it,\" she says, already walking away. There's a folded twenty in the bag too, which is apparently yours now, for reasons unspecified.<br><br><span class='small'>+8 quarters — team fundraiser proceeds, allegedly</span>"
 ];
+// Carly, 13, starting pitcher, undefeated in her own telling. Sass with love under it.
+const CARLY_PREPITCH = [
+  "\"Okay. Try to catch this one. With your hands. That's the assignment.\"",
+  "\"Glove up. That's literally what it's for.\"",
+  "\"I pitch to actual teams, you know. This is charity.\"",
+  "\"You ready? You're not ready. Here it comes anyway.\"",
+  "\"Eyes open helps. I've heard. From people who catch things.\"",
+  "\"I'm going easy. This is me going easy. Remember that.\"",
+  "\"You're eighteen. I'm thirteen. Sit with that for a second.\"",
+  "\"Don't blink. You always blink. It's your whole thing.\"",
+  "\"Penguin could catch this one and Penguin's a rooster with a grudge.\"",
+  "\"Bet you a quarter you drop it. I already spent the quarter.\""
+];
+const CARLY_CATCH_GOOD = [
+  "\"...fine. One. Don't frame it.\"",
+  "\"Okay that was actually not terrible. Weird. Do it again, you won't.\"",
+  "\"Lucky. That was luck. I saw luck happen.\"",
+  "\"Huh. Hands exist after all.\"",
+  "\"Don't smile. You get ONE. Don't make it a thing.\""
+];
+const CARLY_CATCH_GOOD_LUCAS = [
+  "\"...did you just trap it with your foot? Show-off. That doesn't count. (It counts.)\"",
+  "\"Okay, the soccer thing is annoyingly good. I'm annoyed. Nicely done.\"",
+  "\"Ugh, fine, that was clean. You're still slow. But clean.\""
+];
+const CARLY_CATCH_BAD = [
+  "\"You throw like you're filing a complaint about the ball.\"",
+  "\"Wow. Okay. We'll count that as cardio.\"",
+  "\"My travel team would use you as the backstop.\"",
+  "\"That was a strike. It's ALWAYS a strike.\"",
+  "\"Nice hands. For someone wearing oven mitts.\"",
+  "\"Do you want me underhand? I'll go SO underhand.\"",
+  "\"Don't cry. If you cry I win twice.\"",
+  "\"I've seen the neighbor's dog do better and he doesn't have thumbs.\""
+];
 function carlyTalk(){
   if(state.carly.away){
     showModal("CARLY","No sign of her. Andy mentioned something about regionals, or maybe it's already nationals — hard to keep track this time of year. The field's just quiet without her.",[{text:"Huh",cls:"gold"}]);
@@ -1907,10 +2114,14 @@ function carlyTalk(){
     return;
   }
   state.flags.carlyBallTouched = true;
+  // First time she'll always rope you into catch; after that it's a coin flip.
+  const wantsCatch = (!state.flags.carlyPlayedCatch || Math.random()<0.5)
+    && Date.now() > (state.flags.carlyCatchCooldown||0);
+  if(wantsCatch){ openCatchGame(); return; }
   const lines = [
     "Carly complains, at length, about something that happened at practice today. You stopped following the plot two minutes ago. She does not notice. She does not need you to.",
     "A pack of Carly's friends roll through on bikes, and one of them says something about you that makes the rest of them lose it. Carly tells them to knock it off. They do not knock it off.",
-    "Carly insists on 'just a little practice' — underhand, easy. You manage to miss it four times in a row, once spectacularly. She has never laughed that hard at anything in her life.",
+    "Carly's got a NOW CD going on a boombox in the grass, that one song everybody pretends to hate, and she is absolutely not pretending. She knows every word. She is not embarrassed. You are, a little, for both of you.",
     "Penguin spots Carly a good twenty yards from the coop and launches. She's over the fence before you can even yell a warning. Penguin, for reasons nobody has ever explained, has never once come after you."
   ];
   const found = Math.random()<0.25;
@@ -2046,6 +2257,14 @@ const CONCERT_MELODY = [
 const DREAM_MELODY = [
   {f:220.00,d:0.32},{f:207.65,d:0.32},{f:196.00,d:0.32},{f:174.61,d:0.48},
   {f:220.00,d:0.32},{f:246.94,d:0.32},{f:261.63,d:0.32},{f:220.00,d:0.6}
+];
+// Obnoxiously upbeat major-key pop-punk bounce — the NOW-CD, mid-tempo-radio energy
+// Carly lives for. Original riff, just the vibe of a certain inescapable turn-of-the-2000s hit.
+const CARLY_MELODY = [
+  {f:523.25,d:0.12},{f:659.25,d:0.12},{f:783.99,d:0.12},{f:659.25,d:0.12},
+  {f:587.33,d:0.12},{f:659.25,d:0.12},{f:523.25,d:0.12},{f:523.25,d:0.12},
+  {f:440.00,d:0.12},{f:523.25,d:0.12},{f:659.25,d:0.12},{f:587.33,d:0.12},
+  {f:493.88,d:0.12},{f:587.33,d:0.12},{f:523.25,d:0.24}
 ];
 function ensureAudio(){
   if(!audioCtx){
@@ -2317,7 +2536,7 @@ function openDowntown(){
 }
 function openRyan(){
   if(state.mapKey==="pawaterfront"){
-    // Your own Wonder: enough of a hick to set the trebuchet off for real.
+    // Your own Wonder: enough of a ruffian to set the trebuchet off for real.
     if(civWon("hick") && !state.wonders.hick){ trebuchetWonder(); return; }
     // Outsider king trespassing the trebuchet.
     if(!state.wonders.hick && isKingOfAny() && !isKing("hick") && !state.breakIns.hick){
@@ -2842,6 +3061,158 @@ function cancelHackySack(){
 }
 document.getElementById("hackyCancelBtn").addEventListener("click", cancelHackySack);
 
+/* ---------- Play Catch with Carly (you are bad at this; she will let you know) ---------- */
+let catchGame = null;
+function setCatchTaunt(text, good){
+  const el = document.getElementById("catchTaunt");
+  el.textContent = text;
+  el.classList.toggle("good", !!good);
+}
+function openCatchGame(){
+  const playingLucas = state.character==="lucas";
+  const field = document.getElementById("catchField");
+  document.getElementById("catchPitch").textContent = "1";
+  document.getElementById("catchCaught").textContent = "0";
+  document.getElementById("catchYou").textContent = playingLucas ? "🦵" : "🧤";
+  document.getElementById("catchOverlay").classList.remove("hidden");
+  const H = field.clientHeight || 220;
+  // Lucas is genuinely better — bigger catch window, and he can boot it back.
+  const bandH = playingLucas ? 60 : 42;
+  const gloveY = H - 36;
+  catchGame = {
+    pitch:1, caught:0, active:false, raf:null, countdownTimer:null, last:0,
+    H, bandH, bandTop: gloveY - bandH/2, playingLucas, ps:null
+  };
+  const glove = document.getElementById("catchGlove");
+  glove.style.top = catchGame.bandTop+"px";
+  glove.style.height = bandH+"px";
+  const ball = document.getElementById("catchBall");
+  ball.style.top = "-26px"; ball.style.left = "50%"; ball.style.filter="";
+  setCatchTaunt(playingLucas
+    ? "\"Andy said you're 'better than Jesse.' Low bar. Prove it.\""
+    : "\"Finally. Someone to throw at. Try to catch it, superstar.\"", false);
+  state.paused = true;
+  switchMusic(CARLY_MELODY, "square", 0.06);
+  const cd = document.getElementById("catchCountdown");
+  let count = 3;
+  cd.textContent = "Wind-up… " + count;
+  catchGame.countdownTimer = setInterval(()=>{
+    count--;
+    if(count<=0){
+      clearInterval(catchGame.countdownTimer);
+      cd.textContent = "PITCH!";
+      setTimeout(()=>{ if(catchGame) cd.textContent=""; },450);
+      catchGame.active = true;
+      nextPitch();
+    } else {
+      cd.textContent = "Wind-up… " + count;
+    }
+  },600);
+}
+function nextPitch(){
+  if(!catchGame || !catchGame.active) return;
+  if(catchGame.pitch > 8){ endCatchGame(); return; }
+  document.getElementById("catchPitch").textContent = catchGame.pitch;
+  const ramp = (catchGame.pitch-1)/7;
+  const speed = 0.08 + ramp*0.06;                   // px per ms, faster as it goes
+  const curve = Math.random()<0.45 ? (Math.random()<0.5?-1:1)*(0.004+ramp*0.006) : 0;
+  const startX = 40 + Math.random()*20;
+  catchGame.ps = {y:-26, x:startX, speed, vx:curve, resolved:false};
+  const ball = document.getElementById("catchBall");
+  ball.style.top = "-26px"; ball.style.left = startX+"%"; ball.style.filter="";
+  setCatchTaunt(pick(CARLY_PREPITCH), false);
+  catchGame.last = 0;
+  catchGame.raf = requestAnimationFrame(catchTick);
+}
+function catchTick(ts){
+  if(!catchGame || !catchGame.active) return;
+  const ps = catchGame.ps;
+  if(!ps || ps.resolved){ return; }
+  if(!catchGame.last) catchGame.last = ts;
+  const dt = Math.min(48, ts - catchGame.last);
+  catchGame.last = ts;
+  ps.y += ps.speed*dt;
+  ps.x += ps.vx*dt*100/ (catchGame.H||220);          // curve in % space, scaled a touch
+  if(ps.x<8) { ps.x=8; ps.vx=Math.abs(ps.vx); }
+  if(ps.x>92){ ps.x=92; ps.vx=-Math.abs(ps.vx); }
+  const ball = document.getElementById("catchBall");
+  ball.style.top = ps.y+"px"; ball.style.left = ps.x+"%";
+  if(ps.y > catchGame.H + 8){ resolvePitch(false, "drop"); return; }
+  catchGame.raf = requestAnimationFrame(catchTick);
+}
+function catchSwing(){
+  if(!catchGame || !catchGame.active) return;
+  const ps = catchGame.ps;
+  if(!ps || ps.resolved) return;
+  const bc = ps.y + 11;
+  const inBand = bc >= catchGame.bandTop && bc <= catchGame.bandTop + catchGame.bandH;
+  resolvePitch(inBand, inBand ? "catch" : "whiff");
+}
+function resolvePitch(success, kind){
+  const ps = catchGame.ps; if(!ps || ps.resolved) return;
+  ps.resolved = true;
+  if(catchGame.raf) cancelAnimationFrame(catchGame.raf);
+  const ball = document.getElementById("catchBall");
+  if(success){
+    catchGame.caught++;
+    document.getElementById("catchCaught").textContent = catchGame.caught;
+    ball.style.filter = "brightness(1.6)";
+    playCoinSound();
+    const pool = catchGame.playingLucas && Math.random()<0.6 ? CARLY_CATCH_GOOD_LUCAS : CARLY_CATCH_GOOD;
+    setCatchTaunt(pick(pool), true);
+  } else {
+    setCatchTaunt(pick(CARLY_CATCH_BAD), false);
+  }
+  catchGame.pitch++;
+  setTimeout(()=>{ if(catchGame && catchGame.active) nextPitch(); }, 850);
+}
+function catchCleanup(){
+  if(catchGame){
+    clearInterval(catchGame.countdownTimer);
+    if(catchGame.raf) cancelAnimationFrame(catchGame.raf);
+    catchGame.active = false;
+  }
+  document.getElementById("catchOverlay").classList.add("hidden");
+  state.paused = false;
+  switchMusic(MELODY, "triangle", 0.05);
+}
+function endCatchGame(){
+  const caught = catchGame ? catchGame.caught : 0;
+  const lucas = catchGame ? catchGame.playingLucas : false;
+  catchCleanup();
+  catchGame = null;
+  state.flags.carlyBallTouched = true;
+  state.flags.carlyPlayedCatch = true;
+  state.flags.carlyCatchBest = Math.max(state.flags.carlyCatchBest||0, caught);
+  state.flags.carlyCatchCooldown = Date.now() + 20000;
+  const earned = caught;
+  if(earned>0) gainQuarters(earned);
+  if(caught>=6) playFanfare();
+  refreshHud();
+  let verdict;
+  if(lucas){
+    verdict = caught>=6 ? "Carly, grudgingly: \"Okay. You're on the roster. Backup. Deep backup. But on it.\" She kicks the ball back to you one last time, perfectly, just to make a point."
+      : caught>=3 ? "\"Better than Jesse. Still not GOOD, but better than Jesse.\" She seems to consider this the highest compliment available, which, for Jesse, it is."
+      : "\"Andy lied to me,\" Carly says, staring into the middle distance. \"You're exactly as bad. Kick it back, at least.\"";
+  } else {
+    verdict = caught>=6 ? "\"...huh,\" Carly says, genuinely thrown. \"You almost looked like you'd done that before.\" It's the nicest thing she's said to you since roughly 1998."
+      : caught>=3 ? "\"That's a solid D-minus,\" Carly announces, thrilled. \"I'm telling everyone. I'm telling Mom first.\""
+      : "\"That,\" Carly says, wiping actual tears, \"was the funniest thing I have ever watched. Thank you. Same time tomorrow.\"";
+  }
+  showModal("PLAY CATCH WITH CARLY",
+    `You caught ${caught} of 8.<br><br>${verdict}<br><br><span class='small'>${earned>0?`+${earned} quarters — she made you split the "winnings" from a bet you didn't agree to`:"No quarters, but she's already retelling it."}</span>`,
+    [{text: lucas?"Rematch someday":"She's not wrong", cls:"gold"}]);
+}
+document.getElementById("catchSwingBtn").addEventListener("click", catchSwing);
+document.getElementById("catchCancelBtn").addEventListener("click", ()=>{
+  const wasActive = !!catchGame;
+  catchCleanup(); catchGame = null;
+  if(wasActive){
+    state.flags.carlyCatchCooldown = Date.now() + 12000;
+    showModal("PLAY CATCH WITH CARLY", "\"Quitting? Wow. Okay. I'll put it in the newsletter.\" Carly fires the ball into the fence behind you, just once, so you both know she could have hit you.", [{text:"Rude",cls:"gold"}]);
+  }
+});
+
 /* ---------- Count the Seagulls (the pier's answer to hunting bison) ---------- */
 let seagullGame = null;
 function openSeagullCount(){
@@ -2925,14 +3296,65 @@ function endSeagullCount(){
 }
 
 /* ---------- Ferry Captain (the ferry-captain daydream, but playable) ---------- */
-// Three lanes across the channel (percent of field width). Boat + obstacles are
-// centered on these with translateX(-50%).
-const FERRY_LANE_X = [24, 50, 76];
+// Three lanes down the middle of the Sound (percent of field width); the margins
+// are left for the recognizable coastline. Boat + obstacles center on these.
+const FERRY_LANE_X = [28, 50, 72];
 const FERRY_OBSTACLES = ["🚢","📦","🐋","🪵","⛵","🛟","🦭"];
 const FERRY_DURATION = 16000;
 let ferryGame = null;
 function ferrySetBoatLane(){
   document.getElementById("ferryBoat").style.left = FERRY_LANE_X[ferryGame.lane]+"%";
+}
+// Paint the actual shape of Puget Sound behind the playfield — south (Olympia) at
+// the bottom, north (Bellingham/San Juans) at the top, Olympic Peninsula to the
+// west, mainland to the east, islands in the margins. The three lanes stay in open water.
+function drawFerrySound(cv){
+  const c = cv.getContext("2d"); c.imageSmoothingEnabled = false;
+  const W = cv.width, H = cv.height;             // sized to the field at open time
+  c.clearRect(0,0,W,H);
+  const g = c.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#3f7f9c"); g.addColorStop(1,"#245c76");
+  c.fillStyle = g; c.fillRect(0,0,W,H);
+  c.strokeStyle = "rgba(255,255,255,.06)"; c.lineWidth = 1;
+  for(let y=8;y<H;y+=16){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y+3); c.stroke(); }
+  const land = "#3a6b46";
+  // Coast margin as a fraction of width so the three lanes (28/50/72%) always stay in open water.
+  const marginAt = (i,steps,side)=>{
+    let m = 0.12*W + Math.sin(i*1.25 + (side<0?0:1.9))*0.045*W;
+    m += Math.exp(-Math.pow(((H/steps)*i - H*0.60)/(H*0.09),2))*0.06*W;   // Tacoma Narrows pinch
+    return m;
+  };
+  function coast(side){                          // side -1 = west/left, +1 = east/right
+    const steps = 12, baseX = side<0 ? 0 : W;
+    c.fillStyle = land; c.beginPath(); c.moveTo(baseX,0);
+    for(let i=0;i<=steps;i++){ const y=(H/steps)*i, m=marginAt(i,steps,side); c.lineTo(side<0?m:W-m, y); }
+    c.lineTo(baseX,H); c.closePath(); c.fill();
+    c.strokeStyle="rgba(255,255,255,.10)"; c.lineWidth=1; c.beginPath();
+    for(let i=0;i<=steps;i++){ const y=(H/steps)*i, m=marginAt(i,steps,side); const x=side<0?m:W-m; i?c.lineTo(x,y):c.moveTo(x,y); }
+    c.stroke();
+  }
+  coast(-1); coast(1);
+  function isle(x,y,rx,ry){
+    c.fillStyle=land; c.beginPath(); c.ellipse(x,y,rx,ry,0,0,7); c.fill();
+    c.fillStyle="rgba(255,255,255,.09)"; c.beginPath(); c.ellipse(x-rx*0.15,y-ry*0.15,rx*0.55,ry*0.55,0,0,7); c.fill();
+  }
+  // Whidbey — long island hugging the upper-east shore
+  c.save(); c.translate(W*0.9,H*0.29); c.rotate(-0.13); c.fillStyle=land;
+  c.beginPath(); c.ellipse(0,0,0.05*W,0.11*H,0,0,7); c.fill(); c.restore();
+  isle(0.09*W, 0.50*H, 0.05*W, 0.037*H);   // Bainbridge
+  isle(0.10*W, 0.68*H, 0.06*W, 0.043*H);   // Vashon
+  isle(0.13*W,0.07*H,0.035*W,0.011*H); isle(0.24*W,0.045*H,0.03*W,0.01*H); isle(0.85*W,0.05*H,0.035*W,0.011*H);  // San Juans
+  // Olympic mountains, far west, white-capped
+  c.fillStyle="#e8edf0";
+  for(let i=0;i<4;i++){ const mx=0.04*W+i*0.03*W, my=H*0.84-(i%2)*6; c.beginPath(); c.moveTo(mx-4,my+7); c.lineTo(mx,my); c.lineTo(mx+4,my+7); c.closePath(); c.fill(); }
+  // a little Seattle skyline nub, mid-east shore
+  c.fillStyle="#2b3441";
+  for(let i=0;i<4;i++){ c.fillRect(W*0.9+i*3, H*0.56-(i%2)*4, 2, 7+(i%2)*4); }
+  // faint labels so any Washingtonian clocks it instantly
+  c.fillStyle="rgba(255,255,255,.6)"; c.font="7px monospace"; c.textAlign="center";
+  c.fillText("N · BELLINGHAM", W/2, 9);
+  c.fillText("S · OLYMPIA", W/2, H-5);
+  c.save(); c.translate(W*0.5,H*0.52); c.rotate(-Math.PI/2); c.fillStyle="rgba(255,255,255,.28)"; c.font="8px monospace"; c.fillText("PUGET SOUND", 0,0); c.restore();
 }
 function openFerryGame(){
   document.getElementById("ferryScore").textContent = "0";
@@ -2940,6 +3362,9 @@ function openFerryGame(){
   const field = document.getElementById("ferryField");
   field.querySelectorAll(".ferryObstacle").forEach(el=>el.remove());
   document.getElementById("ferryOverlay").classList.remove("hidden");
+  const bg = document.getElementById("ferryBg");
+  bg.width = field.clientWidth || 240; bg.height = field.clientHeight || 300;
+  drawFerrySound(bg);
   const H = field.clientHeight || 300;
   ferryGame = {
     lane:1, score:0, hits:0, active:false,
@@ -3084,7 +3509,7 @@ const CIVILIZATIONS = {
     ]
   },
   hick: {
-    adjective:"Hick", title:"Champion of the Hicks",
+    adjective:"Ruffian", title:"Champion of the Ruffians",
     wonderName:"The Trebuchet", winScene:"trebuchet",
     spots:[
       {k:"campus:m"},{k:"campus:X"},
@@ -3172,19 +3597,19 @@ function trebuchetWonder(){
 const BREAKIN_SCENES = {
   hick: {
     porttownsend: {title:"CRASHING THE RACE",
-      body:"Word gets around the west end that the Champion of the Hicks is entering the kinetic race, and it lands in Port Townsend like a rock through a stained-glass window. You show up with a contraption made of truck parts and pure spite — no sail, no whimsy, just torque. It is aggressively not in the spirit of the thing. You come in <i>first</i>, which turns out to be the single rudest possible outcome: first place is losing, everyone keeps trying to explain, as they hand a hick a trophy they physically did not want to give up. You have broken the race by winning it. It's beautiful."},
+      body:"Word gets around the west end that the Champion of the Ruffians is entering the kinetic race, and it lands in Port Townsend like a rock through a stained-glass window. You show up with a contraption made of truck parts and pure spite — no sail, no whimsy, just torque. It is aggressively not in the spirit of the thing. You come in <i>first</i>, which turns out to be the single rudest possible outcome: first place is losing, everyone keeps trying to explain, as they hand a west-ender a trophy they physically did not want to give up. You have broken the race by winning it. It's beautiful."},
     sequim: {title:"THE POOL JOB",
-      body:"You case the gated pool from Ryan's truck for exactly as long as your patience allows, then simply tuck in behind a resident's golf cart, wave like you were born there, and cannonball. The retirees are appalled in a way that transcends language. Security gives chase — but you know one thing they don't: exactly where the back fence has been quietly rusting through since 1994. You're back on the road, dripping, before the first cart clears the clubhouse. A hick, in the retiree pool. They'll be relitigating it at the HOA meeting for months."}
+      body:"You case the gated pool from Ryan's truck for exactly as long as your patience allows, then simply tuck in behind a resident's golf cart, wave like you were born there, and cannonball. The retirees are appalled in a way that transcends language. Security gives chase — but you know one thing they don't: exactly where the back fence has been quietly rusting through since 1994. You're back on the road, dripping, before the first cart clears the clubhouse. A west-end ruffian, in the retiree pool. They'll be relitigating it at the HOA meeting for months."}
   },
   porttownsend: {
     hick: {title:"A GENTLER TREBUCHET",
-      body:"You roll up to the waterfront in tie-dye and a borrowed hemp poncho, radiating a peace-and-love energy that makes Ryan visibly nervous. You've come to fire the trebuchet — hippie-style. There's a whole discussion about the ethics of launching a frozen chicken. You compromise on a very ripe, entirely compostable heirloom squash, launched with a small ceremony and a sincere apology to the squash. It flies terribly. Ryan is deeply moved and slightly ashamed of how moved he is. The hicks do not know what to do with you. Neither, honestly, do you."},
+      body:"You roll up to the waterfront in tie-dye and a borrowed hemp poncho, radiating a peace-and-love energy that makes Ryan visibly nervous. You've come to fire the trebuchet — hippie-style. There's a whole discussion about the ethics of launching a frozen chicken. You compromise on a very ripe, entirely compostable heirloom squash, launched with a small ceremony and a sincere apology to the squash. It flies terribly. Ryan is deeply moved and slightly ashamed of how moved he is. The ruffians do not know what to do with you. Neither, honestly, do you."},
     sequim: {title:"TOO NICE TO EJECT",
       body:"You infiltrate the retiree pool not by stealth but by sheer disarming warmth — you compliment three separate sun hats, ask a man some real follow-up questions about his hydrangeas, and are somehow handed a lemonade before anyone clocks that you don't live here and never will. By the time the golf carts mobilize, you've already led an impromptu aqua-aerobics class and made four genuine friends. Security escorts you out to a light smattering of applause. You broke into the pool by being, frankly, too pleasant to remove. The retirees remain deeply conflicted."}
   },
   sequim: {
     hick: {title:"A BUSINESSLIKE THOOMP",
-      body:"Champion of the Retirees, at the mill site, in full golf attire, moving with the unbothered authority of a man who has never once been told 'no' by a customer-service representative. You don't sneak up on the trebuchet — you simply inform Ryan that you'll be operating it now, and something in your tone makes him hand over the lanyard without argument. You launch the frozen chicken with a crisp, businesslike THOOMP and a small satisfied nod, as though you've just approved an expense report. The hicks are horrified and, privately, a little impressed. You do not stay for the debrief. You have a tee time."},
+      body:"Champion of the Retirees, at the mill site, in full golf attire, moving with the unbothered authority of a man who has never once been told 'no' by a customer-service representative. You don't sneak up on the trebuchet — you simply inform Ryan that you'll be operating it now, and something in your tone makes him hand over the lanyard without argument. You launch the frozen chicken with a crisp, businesslike THOOMP and a small satisfied nod, as though you've just approved an expense report. The ruffians are horrified and, privately, a little impressed. You do not stay for the debrief. You have a tee time."},
     porttownsend: {title:"THE CART THAT DIDN'T SINK",
       body:"You enter the kinetic race in a pristine white golf cart, which violates every rule and also, somehow, the letter of none of them. While everyone else's contraption is lashed together from driftwood and hope, yours has cup holders. You glide across the mud pit without sinking, which the crowd finds either miraculous or deeply offensive — opinions vary block to block. You post a time so competent it's an automatic disqualification, then announce your retirement from kinetic racing on the spot and cart off before the mud can reach your slacks. Port Townsend will never quite forgive the efficiency of it."}
   }
@@ -3247,6 +3672,8 @@ const MEMORY_ITEMS = [
   {label:"Witnessed the kinetic race chaos", check:()=>!!state.flags.kineticRaceSeen},
   {label:"Walked the old Rainier mill site", check:()=>!!state.flags.millSiteVisited},
   {label:"Hung out with Carly", check:()=>!!state.flags.carlyBallTouched},
+  {label:"Played catch with Carly (and heard about it)", check:()=>!!state.flags.carlyPlayedCatch},
+  {label:"Rode with the neighbors — Lily and Rachel", check:()=>(state.flags.metLily||0)>=1 || (state.flags.metRachel||0)>=1},
   {label:"Ran into Ryan doing Ryan things", check:()=>!!state.flags.metRyan},
   {label:"Had a dream that didn't make sense yet", check:()=>!!state.flags.laurenDream},
   {label:"Daydreamed about running the ferry", check:()=>!!state.flags.ferryDaydream},
@@ -3489,6 +3916,7 @@ window.addEventListener("keydown", e=>{
     if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){ moveFerryLane(-1); e.preventDefault(); return; }
     if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){ moveFerryLane(1); e.preventDefault(); return; }
   }
+  if(catchGame && catchGame.active && (e.code==="Space"||e.key==="Enter")){ catchSwing(); e.preventDefault(); return; }
   if(keyMap[e.key]){ state.keys[keyMap[e.key]] = true; e.preventDefault(); }
   if(e.code==="Space"){ hackyHit(); e.preventDefault(); }
 });
