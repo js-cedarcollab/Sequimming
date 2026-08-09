@@ -1486,22 +1486,34 @@ function drawRooster(x,y){
   ctx.fillStyle="#111"; ctx.fillRect(x-6,y-5,1,1);
 }
 function drawSeniorScooter(x,y,facing){
-  // a mobility scooter piloted with total serenity and zero regard for physics
-  critterShadow(x,y,11);
+  // a beige land-yacht sedan, blinker eternally on, piloted with total serenity
+  critterShadow(x,y,22);
   const dir = facing<0 ? -1 : 1;
-  ctx.save(); ctx.translate(x,y); ctx.scale(dir,1);
-  ctx.fillStyle="#1a1a1a"; ctx.beginPath(); ctx.arc(-8,7,3,0,7); ctx.arc(9,7,3,0,7); ctx.fill();   // wheels
-  ctx.fillStyle="#3aa03a"; ctx.fillRect(-11,1,22,6);                                                // mint-green deck
-  ctx.fillStyle="#2a7a2a"; ctx.fillRect(-11,5,22,2);
-  ctx.fillStyle="#2a2224"; ctx.fillRect(2,-6,9,8);                                                  // seat
-  ctx.strokeStyle="#6a6a6a"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-8,1); ctx.lineTo(-10,-8); ctx.stroke(); // tiller
-  ctx.fillStyle="#444"; ctx.fillRect(-13,-9,7,2);                                                   // handlebars
-  ctx.strokeStyle="#e8b94a"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(10,-6); ctx.lineTo(12,-18); ctx.stroke(); // flag pole
-  ctx.fillStyle="#cf3f3f"; ctx.beginPath(); ctx.moveTo(12,-18); ctx.lineTo(19,-16); ctx.lineTo(12,-14); ctx.fill(); // orange-red flag
-  ctx.fillStyle="#8a8f95"; ctx.fillRect(2,-12,8,8);                                                 // cardigan torso
-  ctx.fillStyle="#e8c9a0"; ctx.fillRect(3,-17,6,5);                                                 // head
-  ctx.fillStyle="#e6e6e6"; ctx.fillRect(3,-18,6,2);                                                 // white hair
-  ctx.fillStyle="#1a1a1a"; ctx.fillRect(3,-16,6,2);                                                 // enormous sunglasses
+  ctx.save(); ctx.translate(x,y-2); ctx.scale(dir,1);
+  // long low body
+  ctx.fillStyle="#cabf9e"; ctx.fillRect(-25,-3,50,13);
+  ctx.fillStyle="#b4aa86"; ctx.fillRect(-25,8,50,3);              // lower shadow
+  ctx.fillStyle="#dcd3b4"; ctx.fillRect(-25,-3,50,3);            // top highlight
+  // tail fins (that old-boat look)
+  ctx.fillStyle="#cabf9e"; ctx.beginPath(); ctx.moveTo(-25,-3); ctx.lineTo(-29,-6); ctx.lineTo(-25,2); ctx.fill();
+  // cabin + roof
+  ctx.fillStyle="#c2b892"; ctx.fillRect(-14,-13,27,11);
+  ctx.fillStyle="#d6cdae"; ctx.fillRect(-14,-13,27,2);
+  // windows
+  ctx.fillStyle="#88aec2"; ctx.fillRect(-11,-10,12,7);          // rear
+  ctx.fillStyle="#88aec2"; ctx.fillRect(3,-10,9,7);             // front
+  ctx.strokeStyle="#9a9070"; ctx.lineWidth=1; ctx.strokeRect(-11,-10,12,7); ctx.strokeRect(3,-10,9,7);
+  // tiny white-haired driver in the front seat
+  ctx.fillStyle="#eee"; ctx.fillRect(4,-9,5,3);                 // hair
+  ctx.fillStyle="#e8c9a0"; ctx.fillRect(5,-6,4,3);             // head
+  // chrome bumpers + lights + eternal blinker
+  ctx.fillStyle="#dedede"; ctx.fillRect(23,4,4,6); ctx.fillRect(-27,4,4,6);
+  ctx.fillStyle="#f6ecca"; ctx.fillRect(25,-1,3,4);            // headlight
+  ctx.fillStyle="#c94f3f"; ctx.fillRect(-27,-1,3,4);          // taillight
+  ctx.fillStyle= (Math.floor(Date.now()/400)%2) ? "#f2a83a" : "#7a5a20"; ctx.fillRect(22,-1,3,3); // blinker, on
+  // whitewall wheels
+  ctx.fillStyle="#1a1a1a"; ctx.beginPath(); ctx.arc(-15,12,6,0,7); ctx.arc(15,12,6,0,7); ctx.fill();
+  ctx.fillStyle="#c9c2ac"; ctx.beginPath(); ctx.arc(-15,12,2.6,0,7); ctx.arc(15,12,2.6,0,7); ctx.fill();
   ctx.restore();
 }
 function drawTarget(x,y){
@@ -2084,7 +2096,7 @@ function drawLostMountainCritters(){
 /* ---- Sequim's most persistent hazard: an elderly resident, pain meds, a scooter ---- */
 let sequimSenior = null;
 const SENIOR_NEARMISS = [
-  "A mint-green mobility scooter cuts diagonally across the parking lot and misses your knees by about a foot. The woman driving it — ninety if she's a day, sunglasses the size of dinner plates, clearly somewhere new on a fresh prescription — does not slow down and does not look. She is already halfway to the next aisle. Nobody around you even reacts. This is just Sequim.",
+  "A beige boat of a sedan — the length of a small barge, blinker on since roughly last Tuesday — drifts across the lot straddling two lanes, and you step well clear. The woman at the wheel, ninety if she's a day, sunglasses the size of dinner plates, does not slow and does not look; she's somewhere new on a fresh prescription and the road is a polite suggestion. Nobody around you even reacts. This is just Sequim.",
   "A Buick the size of a small boat drifts through the intersection at a serene fifteen miles an hour, straddling both lanes, blinker on since roughly last Tuesday. The gentleman at the wheel can no longer really see over it and has made peace with that. You wait him out. Everyone waits him out. It's the only way.",
   "A land-yacht of an old sedan reverses without warning and you step back onto a curb you didn't know was there. The driver waves — apology, or possibly just a wave, impossible to tell — and eases off again, careful and careless at the exact same time. Half the drivers in this town are on something; the other half just stopped checking their mirrors around 1987."
 ];
@@ -3355,8 +3367,8 @@ function checkCompanionMeetup(){
   state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
   updateSidekickButtons(); refreshHud();
   const body = state.character==="jesse"
-    ? "And there's Lucas — chrismahawk and all, leaning on Diane's car in the Sunny Farms lot like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
-    : "You're barely into town before Jesse's beat-up car comes rattling down off Lost Mountain and swings into the Sunny Farms lot, Jesse leaning out the window mid-sentence — glasses catching the light, wild hair, already halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
+    ? "You roll into Sequim and find Lucas out front of his place — chrismahawk and all, leaning on Diane's car like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
+    : "You're barely off your own front step when Jesse's beat-up car comes rattling down off Lost Mountain and swings into your street, Jesse leaning out the window mid-sentence — glasses catching the light, wild hair, already halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
   showModal("GOOD TO SEE YOU", body, [{text:"Let's go",cls:"gold"}]);
   return true;
 }
@@ -4371,7 +4383,7 @@ function startGame(){
   if(state.gameStarted) return;
   if(state.character==="lucas"){
     state.mapKey = "sequim";
-    state.px = 13.5*TILE; state.py = 1.5*TILE;
+    state.px = 14.5*TILE; state.py = 2.5*TILE; state.facing = "up";   // right at his own front door
   } else {
     state.mapKey = "lostmountain";
     state.px = 3.5*TILE; state.py = 3.5*TILE;
