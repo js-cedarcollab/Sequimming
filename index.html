@@ -501,8 +501,8 @@ const MAPS = {
     label: "Sequim",
     rows: [
       "################",
-      "#......##.....L#",
-      "#..i.......u...#",
+      "#..i........#M.#",
+      "#...........#..#",
       "#.........G....#",
       "#..............#",
       "#..q......q....#",
@@ -511,6 +511,23 @@ const MAPS = {
       "#....#..#......#",
       "#............V.#",
       "#..........z...#",
+      "################",
+    ]
+  },
+  dungenessmeadows: {
+    label: "Dungeness Meadows",
+    rows: [
+      "################",
+      "#..t........t..#",
+      "#..d..d..d..d..#",
+      "#..............#",
+      "#....u.........#",
+      "#..d.......d...#",
+      "#.....L........#",
+      "#..d.......d...#",
+      "#..............#",
+      "#..t....Q.....t#",
+      "#.........V....#",
       "################",
     ]
   },
@@ -570,13 +587,15 @@ const MAPS = {
 const SOLID = new Set(["#","~","C"]);
 const INTERACTIVE = new Set(["H","L","T","G","D","V","K","X","Z","R","W","F",
   "a","b","c","e","g","h","i","j","k","m","n","o","p","u","y","z","w","x",
-  "B","S","O","E","P","Y"]);
+  "B","S","O","E","P","Y","M","Q","d","t"]);
 const ZONE_CHARS = new Set(["W","P"]);
 
 const TRAVEL = {
   lostmountain: { sequim:{cost:17,label:"Sequim"} },
+  dungenessmeadows: { sequim:{cost:9,label:"Sequim"} },
   sequim: {
     lostmountain:{cost:17,label:"Lost Mountain"},
+    dungenessmeadows:{cost:9,label:"Dungeness Meadows"},
     campus:{cost:20,label:"Peninsula College"},
     pawaterfront:{cost:22,label:"PA Waterfront"},
     porttownsend:{cost:30,label:"Port Townsend"},
@@ -603,6 +622,7 @@ const TRAVEL = {
 
 const ENTRY_SPAWN = {
   lostmountain: {x:13.5,y:8},
+  dungenessmeadows: {x:8.5,y:10},
   sequim: {x:12.5,y:8},
   campus: {x:10.5,y:9},
   porttownsend: {x:10.5,y:6},
@@ -869,6 +889,7 @@ function drawTileBg(col,row,ch){
   let base = "#4c7a44";
   if(state.mapKey==="porttownsend") base = "#5b8a4f";
   if(state.mapKey==="lostmountain") base = "#3f6a3f";
+  if(state.mapKey==="dungenessmeadows") base = "#6f9a5a";
   if(ch==="#"){ ctx.fillStyle="#20402a"; ctx.fillRect(x,y,TILE,TILE);
     ctx.fillStyle="#5b3a24"; ctx.fillRect(x+TILE/2-3,y+TILE-11,6,8);
     ctx.fillStyle="#2f5c38"; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2-2,TILE*0.34,0,7); ctx.fill();
@@ -925,6 +946,10 @@ function drawTileBg(col,row,ch){
     case "u": drawPool(x,y); break;
     case "y": drawBall(x,y); break;
     case "z": drawLavender(x,y); break;
+    case "M": drawGarageMahal(x,y); break;
+    case "Q": drawGuardShack(x,y); break;
+    case "d": drawDuplex(x,y); break;
+    case "t": drawTrail(x,y); break;
     case "w": drawBuilding(x,y,"#8a7a5a","#4a3f26",true,"🥪"); break;
     case "x": drawMillSite(x,y); break;
     case "B": drawBuilding(x,y,"#6a5a7a","#3a2f4a",true,"📖"); break;
@@ -1556,6 +1581,41 @@ function drawLavender(x,y){
     }
   }
 }
+function drawGarageMahal(x,y){
+  // an ever-growing bachelor garage build, roll-up door, a curl of BBQ smoke
+  ctx.fillStyle="#7a6a52"; ctx.fillRect(x+3,y+8,TILE-6,TILE-12);       // walls
+  ctx.fillStyle="#4a3f2f"; ctx.fillRect(x+1,y+3,TILE-2,7);             // roof
+  ctx.fillStyle="#b7ac90"; ctx.fillRect(x+7,y+13,TILE-14,TILE-17);     // roll-up door
+  ctx.strokeStyle="rgba(0,0,0,.3)"; ctx.lineWidth=1;
+  for(let i=15;i<TILE-4;i+=4){ ctx.beginPath(); ctx.moveTo(x+7,y+i); ctx.lineTo(x+TILE-7,y+i); ctx.stroke(); }
+  // grill + smoke
+  ctx.fillStyle="#2a2a2a"; ctx.fillRect(x+TILE-8,y+TILE-9,5,5);
+  ctx.fillStyle="rgba(220,220,220,.5)";
+  const t=Date.now()/300;
+  ctx.beginPath(); ctx.arc(x+TILE-6+Math.sin(t)*1.5, y+TILE-13, 2, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+TILE-6+Math.sin(t+1)*2, y+TILE-17, 1.6, 0, 7); ctx.fill();
+}
+function drawGuardShack(x,y){
+  // little gatehouse with a striped arm barrier
+  ctx.fillStyle="#8a8272"; ctx.fillRect(x+5,y+9,14,TILE-13);          // booth
+  ctx.fillStyle="#5a5346"; ctx.fillRect(x+3,y+5,18,6);               // roof
+  ctx.fillStyle="#88aec2"; ctx.fillRect(x+8,y+12,8,7);              // window
+  ctx.strokeStyle="#4a4438"; ctx.strokeRect(x+8,y+12,8,7);
+  // striped barrier arm
+  ctx.strokeStyle="#c0392b"; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x+19,y+16); ctx.lineTo(x+TILE-2,y+12); ctx.stroke();
+  ctx.strokeStyle="#eee"; ctx.lineWidth=3; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(x+19,y+16); ctx.lineTo(x+TILE-2,y+12); ctx.stroke(); ctx.setLineDash([]);
+}
+function drawDuplex(x,y){
+  // a 90s PNW side-by-side duplex: two front doors, two little windows
+  ctx.fillStyle="#4a3f2f"; ctx.fillRect(x+1,y+3,TILE-2,6);           // roof
+  ctx.fillStyle="#9a8f76"; ctx.fillRect(x+2,y+8,TILE-4,TILE-11);     // wall
+  ctx.strokeStyle="rgba(0,0,0,.3)"; ctx.strokeRect(x+2,y+8,TILE-4,TILE-11);
+  ctx.fillStyle="#5a4636"; ctx.fillRect(x+6,y+TILE-9,4,7); ctx.fillRect(x+TILE-10,y+TILE-9,4,7); // two doors
+  ctx.fillStyle="#cfe0e6"; ctx.fillRect(x+5,y+11,4,4); ctx.fillRect(x+TILE-9,y+11,4,4);          // two windows
+  ctx.fillStyle="rgba(255,255,255,.12)"; ctx.fillRect(x+2,y+8,TILE-4,2);
+}
 function drawMillSite(x,y){
   ctx.fillStyle="#5c5a52"; ctx.fillRect(x,y,TILE,TILE);
   ctx.fillStyle="#3a382e"; ctx.fillRect(x+4,y+8,TILE-8,TILE-14);
@@ -1656,6 +1716,7 @@ function render(){
   if(state.mapKey==="lostmountain") drawLostMountainCritters();
   if(state.mapKey==="sequim" && sequimSenior) drawSeniorScooter(sequimSenior.x, sequimSenior.y, sequimSenior.facing);
   if(state.mapKey==="campus") drawCampusAlex();
+  if(state.mapKey==="dungenessmeadows") drawDungenessAmbient();
   drawInteractiveMarkers();
   const npcList = NPCS[state.mapKey] || [];
   npcList.forEach(npc=>{
@@ -1737,6 +1798,7 @@ function update(){
   if(state.mapKey==="lostmountain") updateLostMountainCritters();
   if(state.mapKey==="sequim") updateSequimSenior();
   if(state.mapKey==="campus") updateCampusAlex();
+  if(state.mapKey==="dungenessmeadows") updateDungenessAmbient();
 
   if(state.mapKey==="lostmountain" && !state.carly.away){
     if(!state.carly.appeared && Date.now()>state.carly.arriveTime){
@@ -1836,12 +1898,13 @@ function floatText(txt,x,y){
 }
 
 function locName(ch){
-  return {H:"Home",L:"Lucas' House",G:"Gas Station",D:"Downtown",
+  return {H:"Home",L:"Lucas' Duplex",G:"Gas Station",D:"Downtown",
     V:"Your Car",K:"Ryan's Truck",X:"Campus Lawn",C:"Campus Building",
     Z:"Waterfront Pizza",R:"Quimper Sound",W:"The Pier",F:"Ferry Dock",
     a:"Rose Theater", b:"Silverwater Cafe", c:"Sirens Pub", e:"Chetzemoka Park", g:"Legion Hall",
     i:"Sunny Farms", m:"Classroom",
     n:"The Chickens", o:"Shooting Range", p:"Campsite", u:"The Pool", y:"A Softball", z:"Purple Haze Lavender",
+    M:"Rick's Garage-mahal", Q:"The Guard Shack", d:"A Duplex", t:"Greenbelt Trail",
     w:"Round the Clock Deli", x:"The Old Rainier Mill Site",
     B:"Port Book & News", S:"The Shoe Store", O:"Downtown PA", E:"The Waterfront Trail",
     P:"The Waterfront", Y:"Coho Ferry Dock"
@@ -1878,6 +1941,10 @@ function handleSpecial(ch,col,row){
     case "u": openPool(); break;
     case "y": carlyTalk(); break;
     case "z": openLavender(); break;
+    case "M": openGarageMahal(); break;
+    case "Q": openGuardShack(); break;
+    case "d": openDuplex(); break;
+    case "t": openGreenbelt(); break;
     case "w": openDeli(); break;
     case "x": openMillSite(); break;
     case "B": openBookseller(); break;
@@ -2160,10 +2227,92 @@ function updateCampusAlex(){
   }
 }
 function drawCampusAlex(){ if(campusAlex) drawCharacter(campusAlex.x, campusAlex.y, ALEX_PALETTE, "down", true); }
+
+/* ---- Dungeness Meadows: Lucas' semi-retirement gated community ---- */
+function enterDungenessMeadows(){
+  initDungenessAmbient();
+}
+let dmCat = null;
+function randomWalkableDM(){
+  const rows = MAPS.dungenessmeadows.rows;
+  for(let i=0;i<24;i++){
+    const c = 1+Math.floor(Math.random()*14), r = 1+Math.floor(Math.random()*10);
+    if(!SOLID.has(rows[r][c])) return [c,r];
+  }
+  return [7,4];
+}
+function initDungenessAmbient(){
+  const [c,r] = randomWalkableDM();
+  const px=(c+0.5)*TILE, py=(r+0.5)*TILE;
+  dmCat = { x:px, y:py, tx:px, ty:py, timer:0, retarget:200 };
+}
+function updateDungenessAmbient(){
+  if(!dmCat) initDungenessAmbient();
+  const c = dmCat; c.timer++;
+  if(c.timer > c.retarget){
+    c.timer = 0; c.retarget = 160+Math.floor(Math.random()*140);
+    const [cc,rr] = randomWalkableDM();
+    c.tx = (cc+0.5)*TILE; c.ty = (rr+0.5)*TILE;
+  }
+  c.x += (c.tx - c.x) * 0.010;   // slow, fat, entirely unbothered
+  c.y += (c.ty - c.y) * 0.010;
+}
+const GUARD_PALETTE = {hair:"#c9c2b4", shirt:"#3a5a7a", pants:"#2a2f3a", skin:"#d9a877"};
+function drawFatCat(x,y){
+  critterShadow(x,y,10);
+  ctx.fillStyle="#8a8378";                       // big gray body
+  ctx.beginPath(); ctx.ellipse(x,y+1,10,7,0,0,7); ctx.fill();
+  ctx.fillStyle="#8a8378"; ctx.fillRect(x-13,y-6,7,7);          // head
+  ctx.beginPath(); ctx.moveTo(x-13,y-6); ctx.lineTo(x-12,y-11); ctx.lineTo(x-9,y-6); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x-9,y-6); ctx.lineTo(x-7,y-11); ctx.lineTo(x-6,y-6); ctx.fill();
+  ctx.fillStyle="#6f6a60"; ctx.fillRect(x-4,y-4,2,10); ctx.fillRect(x+2,y-4,2,10);   // stripes
+  ctx.strokeStyle="#6f6a60"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x+10,y+2); ctx.quadraticCurveTo(x+16,y-1,x+13,y-7); ctx.stroke();
+  ctx.fillStyle="#2a2a1a"; ctx.fillRect(x-11,y-4,1,1); ctx.fillRect(x-8,y-4,1,1);   // eyes
+}
+function drawDungenessAmbient(){
+  drawCharacter(8.5*TILE, 9.85*TILE, GUARD_PALETTE, "down", false);   // the lazy guard, planted by his shack
+  if(dmCat) drawFatCat(dmCat.x, dmCat.y);
+}
+
+const GUARD_LINES = [
+  "The guard lifts two fingers off the little counter in a wave so unhurried it barely qualifies as motion, then goes back to a crossword he is losing to. He does not ask who you are. He knows every car in here and has decided you're fine.",
+  "\"Headed out?\" the guard says, already raising the arm before you answer. Sequim's down the hill; the whole peninsula's past that. He's worked this booth long enough to have opinions about everyone's grandkids and shares exactly none of them today.",
+  "The guard's radio crackles with nothing in particular. He waves you through with the flat of his hand, the gesture of a man who has never once, in years, needed to actually stop anybody."
+];
+function openGuardShack(){
+  if(!state.flags.guardMet){
+    state.flags.guardMet = true;
+    showModal("THE GUARD SHACK","The guard slides the window open before you reach it. \"You're one of Diane's, or with 'em — close enough.\" He waves you in with two lazy fingers and points a thumb back down the hill. \"Sequim's that way. Everything else is past that.\" Then he's back to his crossword.<br><br><span class='small'>The road out of Dungeness Meadows runs down to Sequim.</span>",[{text:"Thanks",cls:"gold"}]);
+    return;
+  }
+  showModal("THE GUARD SHACK", pick(GUARD_LINES), [{text:"Wave back",cls:"gold"}]);
+}
+const DM_DUPLEX_LINES = [
+  "A side-by-side duplex like all the others — beige siding, a concrete stoop, a wind chime doing slow work in the breeze off the strait. Someone's game show leaks through a screen door. A sprinkler tick-tick-ticks across a lawn nobody's standing on.",
+  "Matching planters, a folded flag in a window, a cat asleep in a patch of sun that hasn't moved in an hour. It's quiet here in a way that's almost loud — the good kind, mostly. The far-off bark of a dog you never actually see.",
+  "The recycling's out on the right day. The hedges are square. Somewhere an oxygen concentrator hums its patient little rhythm and a TV plays to a room you can't see into. Half of Dungeness Meadows is holding its breath and the other half is napping.",
+  "A neighbor you half-recognize raises a coffee mug at you through the kitchen window — not quite a wave, more an acknowledgment that you both exist. The sprinklers come on two lawns over, right on their timer. Everything here runs on a timer."
+];
+function openDuplex(){
+  const found = Math.random()<0.22;
+  let extra = found ? "<br><br><span class='small'>+1 quarter — down in the flowerbed gravel</span>" : "";
+  if(found){ gainQuarters(1); refreshHud(); }
+  showModal("DUNGENESS MEADOWS", pick(DM_DUPLEX_LINES)+extra, [{text:"Keep walking",cls:"gold"}]);
+}
+const DM_GREENBELT_LINES = [
+  "The trail slips off the mowed edge of the development and straight into second-growth fir, and the temperature drops five degrees the second the trees close over. Sword ferns to the knee, a woodpecker somewhere, and that green Olympic dark that starts about ten feet in. You don't go far.",
+  "A deer freezes on the path, decides you're furniture, and goes back to the salmonberry. The greenbelt loops off toward the strait if you let it, quiet enough to hear your own footsteps. Somebody's dumped grass clippings at the trailhead again.",
+  "Blackberry closing in on both sides, a rope of it snagging your sleeve. The trail's darker and cooler than any lawn in here, and if you stand still long enough the neighborhood behind you goes completely, faintly, eerily silent. Then a sprinkler kicks on and breaks the spell."
+];
+function openGreenbelt(){
+  state.flags.dmGreenbelt = true;
+  showModal("GREENBELT TRAIL", pick(DM_GREENBELT_LINES), [{text:"Head back",cls:"gold"}]);
+}
 document.getElementById("dreamBtn").addEventListener("click", openDreamOverlay);
 
 const TELEPORT_LOCATIONS = [
   {label:"Lost Mountain", action:()=>teleportTo("lostmountain")},
+  {label:"Dungeness Meadows", action:()=>teleportTo("dungenessmeadows")},
   {label:"Sequim", action:()=>teleportTo("sequim")},
   {label:"Peninsula College", action:()=>teleportTo("campus")},
   {label:"Port Townsend", action:()=>teleportTo("porttownsend")},
@@ -2250,6 +2399,7 @@ function teleportTo(mapKey){
   if(mapKey==="pawaterfront") rollRyanPresence();
   if(mapKey==="campus") rollAlexPresence();
   if(mapKey==="lostmountain"){ enterLostMountain(); }
+  if(mapKey==="dungenessmeadows"){ enterDungenessMeadows(); }
   updateSidekickButtons();
   document.getElementById("locLabel").textContent = mapDef().label;
   refreshHud();
@@ -2709,7 +2859,8 @@ const LUCAS_HOME_LINES = [
   "Diane's got dinner going and a second plate out before anyone's asked for one. Sam makes fun of the chrismahawk on principle; Angela lands one perfectly-timed eye roll and disappears back into her headphones.",
   "There's a guitar out and the same Kansas riff going for the four-hundredth time — 'Carry On Wayward Son,' always — and it's actually getting good now, which somehow makes it worse.",
   "A soccer bag by the door, cleats caked in west-end mud, practice clearly having run long. Sam wants to know if anybody 'actually played today or just stood there again.'",
-  "Two controllers, a leaning tower of games, and a heated argument about whether the split-screen is fair. It is not fair. Sam has unilaterally ruled that it is fair."
+  "Two controllers, a leaning tower of games, and a heated argument about whether the split-screen is fair. It is not fair. Sam has unilaterally ruled that it is fair.",
+  "The cat — a vast, immovable loaf of an animal — has claimed the exact center of the warmest cushion and dares anyone to contest it. Nobody does. Angela feeds it a chip when Diane isn't looking. It accepts this as its due."
 ];
 const GARAGE_MAHAL_LINES = [
   "Rick's out at the Garage-mahal, as ever — the endless bachelor build, a structure that has been 'almost done' for several years and quietly grows a new wing every time your back is turned. Grandpa supervises from a lawn chair, which mostly means editorializing. There is meat on the grill. There is always meat on the grill.",
@@ -2740,8 +2891,7 @@ function openLucasHouse(){
     showModal("DIANE","\"You two headed up to Port Townsend again? Take this.\" Diane tops off your tank and your pockets both, waves off every protest, and shoos you off the porch before you can say no.<br><br><span class='small'>+30 gas, +3 quarters</span>",[{text:"You're the best",cls:"gold"}]);
     return;
   }
-  const btns = [{text:"Head out",cls:"gold"}, {text:"Swing by Dad's Garage-mahal", onClick:openGarageMahal}];
-  showModal("LUCAS' HOUSE", pick(LUCAS_HOME_LINES), btns);
+  showModal("LUCAS' DUPLEX", pick(LUCAS_HOME_LINES), [{text:"Head out",cls:"gold"}]);
 }
 function openGasStation(){
   const price = state.prices.gas;
@@ -3220,6 +3370,9 @@ function doArrival(dest){
   if(dest==="lostmountain"){
     enterLostMountain();
   }
+  if(dest==="dungenessmeadows"){
+    enterDungenessMeadows();
+  }
   if(dest==="pawaterfront"){
     rollRyanPresence();
   }
@@ -3367,8 +3520,8 @@ function checkCompanionMeetup(){
   state.companion.x = state.px; state.companion.y = state.py; state.companion.history = [];
   updateSidekickButtons(); refreshHud();
   const body = state.character==="jesse"
-    ? "You roll into Sequim and find Lucas out front of his place — chrismahawk and all, leaning on Diane's car like he's been waiting all day, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
-    : "You're barely off your own front step when Jesse's beat-up car comes rattling down off Lost Mountain and swings into your street, Jesse leaning out the window mid-sentence — glasses catching the light, wild hair, already halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
+    ? "You roll down off Lost Mountain into Sequim and there's Lucas — chrismahawk and all, leaning on the hood of Diane's car like he's been parked in the sun waiting all afternoon, which he has. \"There he is,\" he says, as if you're the one running late. Good to see him. Alright — summer starts now."
+    : "You pull into Sequim off the Dungeness Meadows road and here comes Jesse's beat-up car rattling in from the other direction, down off Lost Mountain, Jesse already leaning out the window mid-sentence — glasses catching the light, wild hair, halfway through a story you missed the start of. Good to see him. \"...anyway,\" he says. \"Let's go.\"";
   showModal("GOOD TO SEE YOU", body, [{text:"Let's go",cls:"gold"}]);
   return true;
 }
@@ -3838,7 +3991,9 @@ const CIVILIZATIONS = {
     adjective:"Retiree", title:"Champion of the Retirees",
     wonderName:"The Pool, Finally", winScene:"poolwonder",
     spots:[
-      {k:"sequim:i"},{k:"sequim:D"},{k:"sequim:u"},{k:"sequim:z"},{k:"sequim:L"}
+      {k:"dungenessmeadows:u"},{k:"dungenessmeadows:L"},{k:"dungenessmeadows:d"},
+      {k:"dungenessmeadows:Q"},{k:"dungenessmeadows:t"},
+      {k:"sequim:i"},{k:"sequim:D"}
     ]
   },
   porttownsend: {
@@ -3889,7 +4044,7 @@ function dominantCiv(){
 /* --- Opt-in gate: the Wonders stay invisible until you deliberately choose a town.
        No more surprise "you're 62% Retiree" badge. --- */
 const CIV_OFFER = {
-  sequim: "You keep ending up in Sequim — the farm store, the pool, the whole unbothered retiree rhythm of the place — and honestly, it's rubbing off on you. Lean all the way in and you could become a real Sequim retiree, which happens to be a whole way off this peninsula: <b>The Pool, Finally</b>, a local legend they'll be relitigating at the HOA meeting for years. Go for it?",
+  sequim: "You keep ending up out in Dungeness Meadows — the pool, the duplexes, the sprinklers on their timers, the whole unbothered retiree rhythm of the place — and honestly, it's rubbing off on you. Lean all the way in and you could become a real Sequim retiree, which happens to be a whole way off this peninsula: <b>The Pool, Finally</b>, a local legend they'll be relitigating at the HOA meeting for years. Go for it?",
   porttownsend: "You keep drifting back to Port Townsend — the market, the theater, the salt-and-patchouli of it — and it's rubbing off on you. Lean all the way in and you could become a genuine PT hippie, which happens to be a whole way off this peninsula: <b>The Race</b> (where, remember, coming in last is the entire point). Go for it?",
   hick: "You keep ending up out on the west end — Ryan, the mill site, the whole PA waterfront — and it suits you more than you'd admit. Lean all the way in and you could become a genuine west-end ruffian, which happens to be a whole way off this peninsula: <b>The Trebuchet</b>. Go for it?"
 };
@@ -4382,8 +4537,9 @@ function showTempHint(html,delay){
 function startGame(){
   if(state.gameStarted) return;
   if(state.character==="lucas"){
-    state.mapKey = "sequim";
-    state.px = 14.5*TILE; state.py = 2.5*TILE; state.facing = "up";   // right at his own front door
+    state.mapKey = "dungenessmeadows";
+    state.px = 8.5*TILE; state.py = 8.5*TILE; state.facing = "down";   // his own neighborhood, just up the road from Lucas' duplex
+    enterDungenessMeadows();
   } else {
     state.mapKey = "lostmountain";
     state.px = 3.5*TILE; state.py = 3.5*TILE;
@@ -4401,8 +4557,8 @@ function startGame(){
   startMusic();
 
   showTempHint("Arrows / WASD, the pad below, or drag on the screen to move.<br>Anything with a bobbing gold ▾ arrow is playable — walk onto it to check it out.", 4500);
-  // Lucas already starts in Sequim, so he meets Jesse right away; Jesse meets Lucas
-  // once he's driven down off the mountain.
+  // Both of you start at home — Jesse up on Lost Mountain, Lucas over in Dungeness
+  // Meadows — and drive into Sequim, where you meet up. (No-op at start; fires on arrival.)
   checkCompanionMeetup();
 }
 // START button + keyboard for anyone not tapping: ←/→ choose, Enter starts.
