@@ -721,6 +721,10 @@ const NPCS = {
     {id:"tara", col:12, row:2, name:"Tara", stageFlag:"tara", stages:4,
       pal:{hair:"#8a5a2a", shirt:"#4a5a6a", pants:"#33313a", skin:"#e3b284", accessory:null}}
   ],
+  pawaterfront: [
+    {id:"tiffany", col:7, row:2, name:"Tiffany", stageFlag:"tiffany",
+      pal:{hair:"#141414", shirt:"#2f4a3a", pants:"#2a2a2a", skin:"#e3b284", accessory:null}}
+  ],
   lostmountain: [
     {id:"lily", col:2, row:5, name:"Lily", stageFlag:"metLily", reward:3,
       pal:{hair:"#4a3220", shirt:"#d98aa8", pants:"#5a6a8a", skin:"#e8c9a0", accessory:null}},
@@ -2024,6 +2028,7 @@ function handleSpecial(ch,col,row){
 function interactNpc(npc){
   document.getElementById("locLabel").textContent = npc.name;
   if(npc.id==="gino"){ interactGino(); return; }
+  if(npc.id==="tiffany"){ interactTiffany(); return; }
   const stage = state.flags[npc.stageFlag] || 0;
   const d = NPC_DIALOGUE[npc.id];
   const stages = npc.stages || 3;
@@ -2080,6 +2085,41 @@ function triggerNinaChase(){
     body = "Nina's Buick — that boat of a LeSabre — coughs to life across the lot and starts rolling. Beside you, Lucas just <i>goes</i> — out of the car, running after it on foot, yelling \"wait — <i>wait</i>—\" across the entire parking lot at a vehicle that is very much not going to wait. You do not follow. There's no version of following that helps. You watch him slow to a walk about the time the taillights hit the road, then wander back like nothing happened. Neither of you brings it up.";
   }
   showModal("NINA'S LESABRE", body, [{text:playingLucas?"...worth it":"Poor guy",cls:"gold"}]);
+}
+/* ---------- Tiffany: PA-raised, culinary-school-bound, done with all of you ---------- */
+const TIFFANY_REPEAT = [
+  "\"Still here?\" Tiffany says — to you, but really to the entire concept of Port Angeles.",
+  "Tiffany's practicing plating a little pastry that is frankly too good for this coffee shop and everyone standing in it, a category that pointedly includes the two of you.",
+  "\"When I'm an actual chef,\" Tiffany says, wiping the counter you're leaning on, \"I am not comping either of you a single thing. Getting that on the record now.\"",
+  "Tiffany describes a pan sauce for four uninterrupted minutes, mostly to establish that you wouldn't understand it. You do not understand it. She looks vindicated.",
+  "\"You two still driving around in that?\" She nods at the window, at the car, at your entire lives. \"Cute. I'll be in a kitchen with copper pans and people who've left the county.\""
+];
+function interactTiffany(){
+  const buddy = charName(otherCharacter());
+  const stage = state.flags.tiffany || 0;
+  if(stage===0){
+    state.flags.tiffany = 1;
+    showModal("TIFFANY",
+      `Behind the counter at the waterfront coffee shop, someone's pulling a shot with the body language of a person being made to do it at knifepoint. Tiffany — you've known her since grade school here in PA. She clocks you and ${buddy}, and exhales slowly through her nose. "Oh. It's you two."`,
+      [{text:"Hey, Tiffany",cls:"gold"}]);
+    return;
+  }
+  if(stage===1){
+    state.flags.tiffany = 2;
+    gainQuarters(3); refreshHud();
+    showModal("TIFFANY",
+      `"I'm gone in the fall," she says, unprompted. "Culinary school. Seattle. Real chefs, real people — people who've read one book — not <i>this</i>." She gestures at the waterfront, the peninsula, arguably you two specifically. "You cannot imagine how done I am. Dumb high school, the hicks everywhere, the whole — " a flick of the wrist — "the whole thing. No offense. Some offense." She slides a few quarters across the counter without ringing anything up. "Here. Go. I can't do the two of you <i>and</i> the smell of that car today."<br><br><span class='small'>+3 quarters — dismissal money</span>`,
+      [{text:"...thanks?",cls:"gold"}]);
+    return;
+  }
+  if(stage===2){
+    state.flags.tiffany = 3;
+    showModal("TIFFANY",
+      `There's a cookbook propped against the espresso machine and a number written on the back of her hand in pen. "Eighty-one," she says before you ask. "Days. Then it's knives and copper and people with actual taste, and — this is important — none of you are invited." She almost, <i>almost</i> smiles. "You'd get grease on it. You'd try to put ranch on it." A beat. "It's good to see you, obviously. Don't make it weird."`,
+      [{text:"Wouldn't dream of it",cls:"gold"}]);
+    return;
+  }
+  showModal("TIFFANY", pick(TIFFANY_REPEAT), [{text:"Okay, chef",cls:"gold"}]);
 }
 /* ---------- Gino: the money way off the peninsula (implied, never on-screen criminal) ---------- */
 const GINO_FAVORS = [
