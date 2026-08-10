@@ -722,8 +722,8 @@ const NPCS = {
       pal:{hair:"#8a5a2a", shirt:"#4a5a6a", pants:"#33313a", skin:"#e3b284", accessory:null}}
   ],
   pawaterfront: [
-    {id:"tiffany", col:7, row:2, name:"Tiffany", stageFlag:"tiffany",
-      pal:{hair:"#141414", shirt:"#2f4a3a", pants:"#2a2a2a", skin:"#e3b284", accessory:null}}
+    {id:"tiffany", col:8, row:6, name:"Tiffany", stageFlag:"tiffany",
+      pal:{hair:"#141414", shirt:"#7a2f3a", pants:"#2a2a2a", skin:"#d8ac7a", accessory:null}}
   ],
   lostmountain: [
     {id:"lily", col:2, row:5, name:"Lily", stageFlag:"metLily", reward:3,
@@ -2086,13 +2086,14 @@ function triggerNinaChase(){
   }
   showModal("NINA'S LESABRE", body, [{text:playingLucas?"...worth it":"Poor guy",cls:"gold"}]);
 }
-/* ---------- Tiffany: PA-raised, culinary-school-bound, done with all of you ---------- */
+/* ---------- Tiffany: PA-raised, opinionated, cooks like it's a way out (it is) ---------- */
 const TIFFANY_REPEAT = [
-  "\"Still here?\" Tiffany says — to you, but really to the entire concept of Port Angeles.",
-  "Tiffany's practicing plating a little pastry that is frankly too good for this coffee shop and everyone standing in it, a category that pointedly includes the two of you.",
-  "\"When I'm an actual chef,\" Tiffany says, wiping the counter you're leaning on, \"I am not comping either of you a single thing. Getting that on the record now.\"",
-  "Tiffany describes a pan sauce for four uninterrupted minutes, mostly to establish that you wouldn't understand it. You do not understand it. She looks vindicated.",
-  "\"You two still driving around in that?\" She nods at the window, at the car, at your entire lives. \"Cute. I'll be in a kitchen with copper pans and people who've left the county.\""
+  "\"Still here?\" Tiffany says — to you, and to Port Angeles, and to the general idea of staying anywhere a second longer than you have to.",
+  "She's got the good matcha going — the stuff she got you hooked on, right before it launched you into low orbit that one afternoon. \"You built a tolerance,\" she says, disappointed. \"I liked you better vibrating.\"",
+  "Tiffany's describing a dish in enough detail that you can nearly taste it, which is precisely her point: you can't afford it, you wouldn't get it, and she's leaving.",
+  "\"When I've got my own kitchen,\" she says, \"I'll feed you two properly. Somewhere with a real produce section. Not — \" she gestures at the entire peninsula — \"whatever this is.\"",
+  "She's off shift from the coffee place and still somehow smells like espresso and something citrus. \"Don't get used to me,\" she says. \"Seattle, then somewhere that matters.\" You believe every word. Nobody you know works harder or mentions it less.",
+  "Tiffany's already half out of PA in her head — the whole plan mapped, knives sharpened, a countdown running behind her eyes. You've eaten her cooking. You'd bet the car on her over anybody out here."
 ];
 function interactTiffany(){
   const buddy = charName(otherCharacter());
@@ -2100,23 +2101,23 @@ function interactTiffany(){
   if(stage===0){
     state.flags.tiffany = 1;
     showModal("TIFFANY",
-      `Behind the counter at the waterfront coffee shop, someone's pulling a shot with the body language of a person being made to do it at knifepoint. Tiffany — you've known her since grade school here in PA. She clocks you and ${buddy}, and exhales slowly through her nose. "Oh. It's you two."`,
-      [{text:"Hey, Tiffany",cls:"gold"}]);
+      `Tiffany's out on the waterfront on a break from the coffee place in town — one of the little peninsula spots, not that there's another kind. She's from here, knows literally everyone who walks past, and will actually speak to maybe six of them. You and ${buddy} met her up at Peninsula College; somehow she let the two of you into the outer orbit of her very small, very closed circle, mostly, you suspect, for fresh material to be unimpressed by. Sicilian on one side, Palestinian on the other, raised on food that means something. She clocks you and exhales through her nose. "Oh good. It's you two."`,
+      [{text:"Hey, Tiff",cls:"gold"}]);
     return;
   }
   if(stage===1){
     state.flags.tiffany = 2;
     gainQuarters(3); refreshHud();
     showModal("TIFFANY",
-      `"I'm gone in the fall," she says, unprompted. "Culinary school. Seattle. Real chefs, real people — people who've read one book — not <i>this</i>." She gestures at the waterfront, the peninsula, arguably you two specifically. "You cannot imagine how done I am. Dumb high school, the hicks everywhere, the whole — " a flick of the wrist — "the whole thing. No offense. Some offense." She slides a few quarters across the counter without ringing anything up. "Here. Go. I can't do the two of you <i>and</i> the smell of that car today."<br><br><span class='small'>+3 quarters — dismissal money</span>`,
-      [{text:"...thanks?",cls:"gold"}]);
+      `"I'm gone the first second I can be," she says, unprompted, the way she says everything. "Culinary school. Seattle. A city where the food isn't a <i>dare</i>." She pushes a thermos into your hands before you can decline. "Matcha. The real kind, not the sad stuff." She's the one who got you into it — that first cup left you so wired you could hear colors, and she has never stopped being pleased about it. Everything she makes is like this: infuriatingly, genuinely better than anywhere out here has earned. She peels off a few quarters too, mostly to end the conversation. "Go. Shoo. I've got twelve minutes of break left and I'm not spending them on you two."<br><br><span class='small'>+3 quarters — and the best drink you'll have all week</span>`,
+      [{text:"...thanks, Tiff",cls:"gold"}]);
     return;
   }
   if(stage===2){
     state.flags.tiffany = 3;
     showModal("TIFFANY",
-      `There's a cookbook propped against the espresso machine and a number written on the back of her hand in pen. "Eighty-one," she says before you ask. "Days. Then it's knives and copper and people with actual taste, and — this is important — none of you are invited." She almost, <i>almost</i> smiles. "You'd get grease on it. You'd try to put ranch on it." A beat. "It's good to see you, obviously. Don't make it weird."`,
-      [{text:"Wouldn't dream of it",cls:"gold"}]);
+      `She's talking food, which is to say she's talking, the way she always is — something her nonna made, a Sicilian thing and a Palestinian thing and how PA has never once gotten either of them right and never will. "I'm going to cook somewhere that <i>matters</i>," she says, and she's not joking, and she's not wrong — you've eaten her cooking, you'd bet the car on her over anybody. "You two can visit. Once. If you swear on your lives not to ask for ranch." She means the invite. She also means the ranch part.`,
+      [{text:"On my life",cls:"gold"}]);
     return;
   }
   showModal("TIFFANY", pick(TIFFANY_REPEAT), [{text:"Okay, chef",cls:"gold"}]);
